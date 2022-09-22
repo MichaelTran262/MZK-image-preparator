@@ -4,28 +4,7 @@
 {% endblock %}
 
 {% block body %}
-<script>
-    $( document ).ready(function() {
-        $('#myInput').keyup(function() {
-            // Declare variables
-            var filter = $('#myInput').val()
-            getDirs(filter);
-        });
-
-        function getDirs(filter) {
-            console.log(filter)
-            var dataset = $('#dirTable tbody').find('tr');
-            //$('#dirTable tbody').hide();
-            dataset.show();
-            dataset.filter(function(index, item) {
-                return $(item).find('td:first-child').text().indexOf(filter) === -1;
-            }).hide();
-        }
-    });
-</script>
-
-<div class="content jumbotron">
-    <h1>Preparator</h1>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <input type="text" id="myInput" placeholder="Hledat složku...">
     <table class="table" id="dirTable">
         <thead>
@@ -43,5 +22,5 @@
             {% endfor %}
           </tbody>
     </table>
-</div>
+{% block modal %}{% endblock %}
 {% endblock %}
