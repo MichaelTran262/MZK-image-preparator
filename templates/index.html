@@ -13,14 +13,30 @@
                 <th class="actions">Akce</th>
             </tr>
         </thead>
-        <tbody>
-            {% for file in files %}
-                <tr>
-                    <td><i class="fa fa-folder-open"></i>{{ file }}</th>
-                    <td class="actions"><a href="{{ 'prepare/' + file }}">Připravit</a></th>
-                </tr>
-            {% endfor %}
-          </tbody>
+        <tbody id="tableContent">
+            
+        </tbody>
     </table>
+    <script> 
+        let tbody = $('#tableContent');
+        let myjson = {{ files|tojson|safe }};
+        tbody.empty();
+        for(let i = 0; i < myjson.length; i++){
+            href_path = window.location.pathname + '/' + myjson[i].dirname
+            console.log(href_path)
+            let row = "";
+            row += '<tr>';
+            row += '<td><i class="fa fa-folder-open"></i><a href="' + href_path + '">' + myjson[i].dirname+ '</a></td>';
+            if(myjson[i].hasDirTwo) {
+                row += '<td class="actions"><form action="prepare/' + myjson[i].dirname + '" method="post"> \
+                    <input type="submit" value="Připravit"</td>';
+            } else {
+                row += '<td></td>';
+            }
+            row += '</tr>';
+            tbody.append(row);
+        }
+
+    </script>
 {% block modal %}{% endblock %}
 {% endblock %}
