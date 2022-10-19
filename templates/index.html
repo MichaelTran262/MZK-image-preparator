@@ -6,6 +6,7 @@
 {% block body %}
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <input type="text" id="myInput" placeholder="Hledat složku...">
+    <a href="/">Zpět na kořenovou složku</a>
     <table class="table" id="dirTable">
         <thead>
             <tr>
@@ -20,23 +21,29 @@
     <script> 
         let tbody = $('#tableContent');
         let myjson = {{ files|tojson|safe }};
-        tbody.empty();
-        for(let i = 0; i < myjson.length; i++){
-            href_path = window.location.pathname + '/' + myjson[i].dirname
-            console.log(href_path)
-            let row = "";
-            row += '<tr>';
-            row += '<td><i class="fa fa-folder-open"></i><a href="' + href_path + '">' + myjson[i].dirname+ '</a></td>';
-            if(myjson[i].hasDirTwo) {
-                row += '<td class="actions"><form action="prepare/' + myjson[i].dirname + '" method="post"> \
-                    <input type="submit" value="Připravit"</td>';
-            } else {
-                row += '<td></td>';
+        fill_table(tbody)
+        function fill_table(tbody){
+            tbody.empty();
+            for(let i = 0; i < myjson.length; i++){
+                href_path = window.location.pathname + '/' + myjson[i].dirname
+                console.log(href_path)
+                let row = "";
+                row += '<tr>';
+                row += '<td><i class="fa fa-folder-open"></i><a href="' + href_path + '">' + myjson[i].dirname+ '</a></td>';
+                if(myjson[i].hasDirTwo) {
+                    if(!myjson[i].hasDirThree || !myjson[i].hasDirFour) {
+                        row += '<td class="actions"><form action="prepare/' + myjson[i].dirname + '" method="post"> \
+                                            <input type="submit" value="Připravit"</td>';
+                    }
+                    
+                } else {
+                    row += '<td></td>';
+                }
+                row += '</tr>';
+                tbody.append(row);
             }
-            row += '</tr>';
-            tbody.append(row);
         }
-
+        setInterval(fill_table(tbody), 1000);
     </script>
 {% block modal %}{% endblock %}
 {% endblock %}
