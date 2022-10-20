@@ -6,7 +6,14 @@
 {% block body %}
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <input type="text" id="myInput" placeholder="Hledat složku...">
-    <a href="/">Zpět na kořenovou složku</a>
+    <div class="row">
+        <div class="col">
+          <a href="/">Zpět na kořenovou složku</a>
+        </div>
+        <div class="col">
+          <p style="display:inline">Počet aktivních procesů: <b id="proc_count"></b></p>
+        </div>
+      </div>
     <table class="table" id="dirTable">
         <thead>
             <tr>
@@ -43,7 +50,19 @@
                 tbody.append(row);
             }
         }
-        setInterval(fill_table(tbody), 1000);
+        function get_proc_count() {
+            fetch('/active_proc_count')
+                .then(res => res.json())
+                .then(data => {
+                    console.log(data.proc_count)
+                    $('#proc_count').html(data.proc_count)
+                })
+        }
+        $( document ).ready(function() {
+            get_proc_count();
+            setInterval(get_proc_count, 1000);
+        });
+        
     </script>
 {% block modal %}{% endblock %}
 {% endblock %}

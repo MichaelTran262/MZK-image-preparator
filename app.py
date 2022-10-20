@@ -1,3 +1,4 @@
+from audioop import mul
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, render_template, url_for, abort, send_file, redirect, request, jsonify
 import multiprocessing
@@ -13,21 +14,6 @@ else:
     BASE_DIR = '/home/tran/test'
 
 app = Flask(__name__)
-
-class InvalidUsage(Exception):
-    status_code = 400
-
-    def __init__(self, message, status_code=None, payload=None):
-        Exception.__init__(self)
-        self.message = message
-        if status_code is not None:
-            self.status_code = status_code
-        self.payload = payload
-
-    def to_dict(self):
-        rv = dict(self.payload or ())
-        rv['message'] = self.message
-        return rv
 
 @app.route('/', defaults={'req_path': ''})
 @app.route('/home', defaults={'req_path': ''})
@@ -71,6 +57,9 @@ def prepare(req_path):
             3: abs_path + '/3',
             4: abs_path + '/4'
         }
+        if len(multiprocessing.active_children()) > 2:
+            files = os.listdir(BASE_DIR)  
+            return render_template('modal.html', msg="Už běží dva jiné procesy. (Pokud chcete navýšit, napište správci)", files=files)
         for dir in dirs:
             if dir == 2:
                 if not os.path.exists(dirs[dir]):
@@ -95,26 +84,12 @@ def prepare(req_path):
     else:
         return '', 204
 
-@app.route('/active', methods=['GET', 'POST'])
+@app.route('/active_proc_count', methods=['GET'])
 def is_running():
-    proc = False
-    for running_proc in multiprocessing.active_children():
-        print(running_proc.name)
-        proc = True
     dict = {}
-    if proc:
-        dict['has_process'] = True
-    else:
-        dict['has_process'] = False
+    dict['proc_count'] = len(multiprocessing.active_children())
+    print(dict)
     return jsonify(dict)
-
-
-@app.errorhandler(InvalidUsage)
-def handle_invalid_usage(error):
-    app.logger.info("Uhandel invalid usege")
-    response = jsonify(error)
-    response.status_code = error.status_code
-    return response
 
 def check_dir(path):
     if not os.path.exists(path):
