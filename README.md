@@ -11,5 +11,3 @@ python3 -m venv <nazev_venv>
 python3 app.py
 ```
 Bravo! Aplikace běží na [localhost:5000](http://localhost:5000).
-
-Test
