@@ -1,6 +1,6 @@
 from audioop import mul
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import Flask, render_template, url_for, abort, send_file, redirect, request, jsonify
+from flask import Flask, request, render_template, url_for, abort, send_file, redirect, request, jsonify
 import multiprocessing
 import os
 import time
@@ -90,6 +90,15 @@ def is_running():
     dict['proc_count'] = len(multiprocessing.active_children())
     print(dict)
     return jsonify(dict)
+
+
+
+@app.route('/send_to_mzk', methods=['POST'])
+def schedule_send():
+    scheduled_time = request.args["time"]
+    sched = BackgroundScheduler()
+
+#End of endpoints
 
 def check_dir(path):
     if not os.path.exists(path):
