@@ -22,6 +22,10 @@ class Process(Base):
             start={self.start!r}),          \
             stop={self.stop!r}              \
             forcefull={self.forceful!r})"
+    
+    def scp_and_remove(self):
+        #sond folders with foreign key of process
+        # hotovo
 
 class Folder(Base):
     
