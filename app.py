@@ -5,15 +5,20 @@ import multiprocessing
 import os
 import time
 import pyvips
+import logging
 
 DEBUG = True
 
 if DEBUG:
+    logger = logging.getLogger('werkzeug')
     BASE_DIR = '/home/tran/Desktop/git/github/MichaelTran262/image-preparator/test'
 else:
+    logger = logging.getLogger('gunicorn.access')
     BASE_DIR = '/home/tran/test'
 
 app = Flask(__name__)
+fh = logging.FileHandler('./logs/preparator.log', 'a', 'utf-8')
+logger.addHandler(fh)
 
 @app.route('/', defaults={'req_path': ''})
 @app.route('/home', defaults={'req_path': ''})
@@ -75,10 +80,6 @@ def prepare(req_path):
         task_cp = multiprocessing.Process(target=copy_images, args=(dirs[2], dirs))
         task_cp.start()
         task_cp.join(1)
-        if task_cp.is_alive():
-            print("Is alive")
-        else:
-            print("Is not alive")
         
         return '', 204
     else:
@@ -88,7 +89,6 @@ def prepare(req_path):
 def is_running():
     dict = {}
     dict['proc_count'] = len(multiprocessing.active_children())
-    print(dict)
     return jsonify(dict)
 
 
@@ -129,5 +129,5 @@ def copy_images(src_dir, dirs):
 
 if __name__ == "__main__":
     max_proc = multiprocessing.cpu_count()
-    print(" * MAX processes available: " + str(max_proc))
+    app.logger.info(" * MAX processes available: " + str(max_proc))
     app.run(debug=DEBUG)
