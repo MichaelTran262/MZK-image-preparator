@@ -27,6 +27,10 @@ class ProcessDb(Base):
             jobCreated={self.jobCreated!r}  \
             processStatus={self.processStatus!r} \
             forcefull={self.forceful!r})"
+    
+    def scp_and_remove(self):
+        #sond folders with foreign key of process
+        # hotovo
 
 class FolderDb(Base):
     

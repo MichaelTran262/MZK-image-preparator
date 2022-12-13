@@ -7,11 +7,12 @@ import time
 import pyvips
 import logging
 
+
 DEBUG = True
 
 if DEBUG:
     logger = logging.getLogger('werkzeug')
-    BASE_DIR = '/mnt'
+    BASE_DIR = '/mnt/storage'
 else:
     logger = logging.getLogger('gunicorn.access')
     BASE_DIR = '/home/tran/test'
@@ -91,7 +92,9 @@ def is_running():
     dict['proc_count'] = len(multiprocessing.active_children())
     return jsonify(dict)
 
-
+@app.route('/processes', methods=['GET'])
+def get_processes():
+    pass
 
 @app.route('/send_to_mzk', methods=['POST'])
 def schedule_send():
