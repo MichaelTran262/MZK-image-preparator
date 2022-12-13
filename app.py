@@ -11,7 +11,7 @@ DEBUG = True
 
 if DEBUG:
     logger = logging.getLogger('werkzeug')
-    BASE_DIR = '/home/tran/Desktop/git/github/MichaelTran262/image-preparator/test'
+    BASE_DIR = '/mnt'
 else:
     logger = logging.getLogger('gunicorn.access')
     BASE_DIR = '/home/tran/test'
@@ -96,7 +96,6 @@ def is_running():
 @app.route('/send_to_mzk', methods=['POST'])
 def schedule_send():
     scheduled_time = request.args["time"]
-    sched = BackgroundScheduler()
 
 #End of endpoints
 
