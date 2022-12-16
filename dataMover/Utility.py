@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker
 class Utility():
 
     def __init__(self):
-        self.logger = logging.getLogger("DataSender")
+        self.logger = logging.getLogger("werkzeug")
         self.logger.setLevel(logging.DEBUG)
         fh = logging.FileHandler("DataSender.log")
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')

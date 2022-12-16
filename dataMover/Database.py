@@ -1,6 +1,5 @@
 from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, UniqueConstraint, relationship, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-from ProcessWrapper import ProcsessStatus
 
 Base = declarative_base()
 
@@ -9,8 +8,9 @@ class ProcessDb(Base):
     __tablename__ = 'process'
 
     processId = Column(Integer, primary_key=True)
-    pid = Column(Integer, nullable=False)
-    jobCreated = Column(DateTime, nullable=False)
+    globalId = Column(String(40), nullable=False)
+    pid = Column(Integer, nullable=True)
+    scheduledFor = Column(DateTime, nullable=False)
     start = Column(DateTime, nullable=True)
     stop = Column(DateTime, nullable=True)
     forceful = Column(Boolean, nullable=True)
@@ -21,23 +21,20 @@ class ProcessDb(Base):
 
     def __repr__(self):
         return f"Book(                      \
+            globalId={self.globalId!r},     \
             pid={self.pid!r},               \
             start={self.start!r}),          \
             stop={self.stop!r}              \
-            jobCreated={self.jobCreated!r}  \
+            scheduledFor={self.scheduledFor!r}  \
             processStatus={self.processStatus!r} \
             forcefull={self.forceful!r})"
-    
-    def scp_and_remove(self):
-        #sond folders with foreign key of process
-        # hotovo
 
 class FolderDb(Base):
     
     __tablename__ = 'folder'
 
     folderId = Column(Integer, primary_key=True)
-    processId = Column(Integer, ForeignKey('Process.processId'), nullable=False)
+    processId = Column(Integer, ForeignKey('Process.processWrapperId'), nullable=False)
     folderName = Column(String, nullable=False)
     folderPath = Column(String, nullable=False)
 
@@ -46,3 +43,6 @@ class FolderDb(Base):
             processId={self.processId!r},   \
             folderName={self.folderName!r}),\
             folderPath={self.folderPath!r}"
+
+if __name__ == '__main__':
+    pass

@@ -1,7 +1,9 @@
 import multiprocessing as mp
 import os
 import Database as db
+import signal
 
+from uuid import uuid4
 from Folder import Folder
 from Utility import Utility
 from datetime import datetime
@@ -16,59 +18,55 @@ class ProcsessStatus():
 
 class ProcessWrapper():
 
-    def __init__(self, folders, sendTime = None):
+    def __init__(self, folders = None, sendTime = None):
 
         self.folders = {}
         self.utility = Utility()
+        self.globalId = uuid4()
+        self.mpPid = None
         self.status = ProcsessStatus.SCHEDULED if sendTime else ProcsessStatus.IN_QUEUE
         for folder in folders:
             self.addFolder(folder)
-            self.folders[folder].setStatus(self.status)
+        self.setStatus(self.status)
         self.scheduler = BackgroundScheduler()
-        self.sendTime = sendTime if sendTime else datetime.now()
-        self.scheduler.add_job(self.send, 'date', run_date=self.sendTime)
-        self.scheduler.start()
 
-    def send(self):
-        for folder in self.folders:
-            if "&" not in folder:
-                self.sendThroughGridFTP(self, folder)
-            else:
-                raise Exception("Invalid folder name")
-
-    def sendThroughRsync(self, folder):
-        self.status = ProcsessStatus.BEING_SENT
-        self.folders[folder].setStatus(self.status)
-        self.utility.log("Sending folder " + folder + " through Rsync")
+    def sendThroughRsync(self):
+        if self.setStatus != ProcsessStatus.SCHEDULED and self.setStatus != ProcsessStatus.IN_QUEUE:
+            self.utility.log("Process already sent, finished or killed")
+            return
+        self.setStatus(ProcsessStatus.BEING_SENT)
         self.utility.log("Creating process")
-        process = mp.Process(target=self.sendThroughRsyncProcess, args=(folder,))
+        process = mp.Process(target=self.sendThroughRsyncProcess)
         self.utility.log("Starting process")
         process.start()
         self.utility.log("Process started")
         process.join()
         self.utility.log("Process finished")
-        self.status = ProcsessStatus.FINISHED
-        self.folders[folder].setStatus(self.status)
-        self.utility.log("Folder " + folder + " sent through Rsync")
+        self.setStatus(ProcsessStatus.FINISHED)
     
-    #Method to go through the folder and send the files with Rsync
-    def sendThroughRsyncProcess(self, folder):
+    def sendThroughRsyncProcess(self):
         self.utility.log("Sending files through Rsync")
         if self.checkIfStringsAreValid([self.utility.port, self.utility.sshUser, self.utility.ipAddress]):
             raise Exception("Invalid ssh port, ssh user or ip address.")
-        for root, dirs, files in os.walk(folder):
-            for file in files:
-                if "&" in file:
-                    raise Exception("Invalid file name")
-                self.utility.log("Sending file " + file)
-                os.system("rsync -avz -e \"ssh -p {sshPort}\" {file} {sshUser}@{ipAddress}:{file}".format(
-                    sshPort=self.utility.port,
-                    file=file,
-                    sshUser=self.utility.sshUser,
-                    ipAddress=self.utility.ipAddress
-                ))
-                self.utility.log("File " + file + " sent")
-        self.utility.log("Files sent through Rsync")
+        self.mpPid = os.getpid()
+        session = self.utility.session
+        session.query(db.ProcessDb)                         \
+            .filter(db.ProcessDb.globalId == self.globalId) \
+            .update({'pid': os.getpid()})
+        for folder in self.folders:
+            for root, dirs, files in os.walk(folder):
+                for file in files:
+                    if "&" in file:
+                        raise Exception("Invalid file name")
+                    self.utility.log("Sending file " + file)
+                    os.system("rsync -avz -e \"ssh -p {sshPort}\" {file} {sshUser}@{ipAddress}:{file}".format(
+                        sshPort=self.utility.port,
+                        file=file,
+                        sshUser=self.utility.sshUser,
+                        ipAddress=self.utility.ipAddress
+                    ))
+                    self.utility.log("File " + file + " sent")
+            self.utility.log("Files sent through Rsync")
     
     def checkIfStringsAreValid(self, strings):
         for string in strings:
@@ -77,10 +75,17 @@ class ProcessWrapper():
         return True
 
     def killProcess(self):
-        pass
+        pid = self.mpPid
+        if not pid:
+            self.utility.log("Process not started")
+            return
+        self.setStatus(ProcsessStatus.KILLED)
+        self.utility.log("Process " + str(pid) + " killed")
+        os.kill(pid, signal.SIGTERM)
     
     def addFolder(self, folder):
         self.folders[folder] = Folder(folder, self.utility)
+        self.folders[folder].setStatus(self.status)
     
     def removeFolder(self, folder):
         self.folders[folder] = None
@@ -92,8 +97,9 @@ class ProcessWrapper():
         session = self.utility.session
         if status == ProcsessStatus.SCHEDULED:
             row = db.ProcessDb(
-                pid=os.getpid(),
-                jobCreated=self.sendTime,
+                globalId=self.globalId,
+                pid=None,
+                scheduledFor=None,
                 start=None,
                 stop=None,
                 forceful=None,
@@ -104,16 +110,43 @@ class ProcessWrapper():
         elif status == ProcsessStatus.IN_QUEUE:
             self.status = status
         elif status == ProcsessStatus.BEING_SENT:
-            session.query(db.ProcessDb)                 \
-                .filter(db.ProcessDb.pid == os.getpid())\
+            session.query(db.ProcessDb)                         \
+                .filter(db.ProcessDb.globalId == self.globalId) \
                 .update({'start': datetime.now()})
             self.status = status
         elif status == ProcsessStatus.FINISHED:
-            session.query(db.ProcessDb)                 \
-                .filter(db.ProcessDb.pid == os.getpid())\
+            session.query(db.ProcessDb)                        \
+                .filter(db.ProcessDb.globalId == self.globalId)\
                 .update({'stop': datetime.now()})
             self.status = status
         self.status = status
-        
         for folder in self.folders:
             self.folders[folder].setStatus(status)
+    
+    def setSendTime(self, sendTime = None):
+        if sendTime:
+            convertedTime = datetime.strptime(sendTime, "%Y-%m-%d %H:%M:%S")
+        else:
+            convertedTime = datetime.now()
+        self.sendTime = convertedTime
+        session = self.utility.session
+        session.query(db.ProcessDb)                         \
+            .filter(db.ProcessDb.globalId == self.globalId) \
+            .update({'scheduledFor': convertedTime})
+    
+    def scheduleSend(self):
+        self.scheduler.add_job(self.sendThroughRsync, 'date')
+        self.scheduler.start()
+        self.setStatus(ProcsessStatus.SCHEDULED)
+    
+    def getPid(self):
+        return self.mpPid
+    
+    def getGlobalId(self):
+        return self.globalId
+    
+    def getFolders(self):
+        return self.folders
+    
+    def getStatus(self):
+        return self.status

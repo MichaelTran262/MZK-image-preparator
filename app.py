@@ -1,3 +1,4 @@
+from dataMover.ProcessWrapper import ProcessWrapper
 from audioop import mul
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, request, render_template, url_for, abort, send_file, redirect, request, jsonify
@@ -20,6 +21,8 @@ else:
 app = Flask(__name__)
 fh = logging.FileHandler('./logs/preparator.log', 'a', 'utf-8')
 logger.addHandler(fh)
+dataSender = None
+activeSenders = {}
 
 @app.route('/', defaults={'req_path': ''})
 @app.route('/home', defaults={'req_path': ''})
@@ -96,9 +99,32 @@ def is_running():
 def get_processes():
     pass
 
+#Chudyho endpointy
+
+@app.route('/add_folder', methods=['POST'])
+def add_new_folder():
+    dataSender.addFolder(request.args["folder"])
+
 @app.route('/send_to_mzk', methods=['POST'])
 def schedule_send():
-    scheduled_time = request.args["time"]
+    if request.args["time"]:
+        dataSender.setSendTime(request.args["time"])
+    else:
+        dataSender.setSendTime()
+    dataSender.scheduleSend()
+    globalId = dataSender.getGlobalId()
+    activeSenders[globalId] = dataSender
+    dataSender = ProcessWrapper()
+    
+@app.route('/cancel_send', methods=['POST'])
+def cancel_send():
+    chosenSender = activeSenders[request.args["globalId"]]
+    chosenSender.killProcess()
+    activeSenders.pop(request.args["globalId"])
+
+@app.route('/get_sender_processes', methods=['GET'])
+def get_sender_processes():
+    return jsonify(activeSenders)
 
 #End of endpoints
 
