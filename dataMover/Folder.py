@@ -1,5 +1,4 @@
-from Utility import Utility
-from ProcessWrapper import ProcsessStatus as pStat
+import os
 
 class Folder():
 
@@ -8,6 +7,7 @@ class Folder():
         self.folderPath = path
         self.folderName = path.split("/")[-1]
         self.util = utility
+        self.fileSize = self.__calculateSize()
         self.status = None
     
     def getFolderPath(self):
@@ -20,6 +20,13 @@ class Folder():
         self.folderPath = folderPath
         self.folderName = folderPath.split("/")[-1]
     
+    def __calculateSize(self):
+        totalSize = 0
+        for root, dirs, files in os.walk(self.folderPath):
+            for file in files:
+                totalSize += os.path.getsize(os.path.join(root, file))
+        return totalSize
+
     """
     GETTERS AND SETTERS
     """
@@ -28,3 +35,14 @@ class Folder():
     
     def setStatus(self, status):
         self.status = status
+    
+    def getSize(self):
+        return self.fileSize
+    
+    def getJson(self):
+        return {
+            "folderPath": self.folderPath,
+            "folderName": self.folderName,
+            "fileSize": self.fileSize,
+            "status": self.status
+        }

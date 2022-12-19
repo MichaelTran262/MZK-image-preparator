@@ -8,12 +8,11 @@ import time
 import pyvips
 import logging
 
-
 DEBUG = True
 
 if DEBUG:
     logger = logging.getLogger('werkzeug')
-    BASE_DIR = '/mnt/storage'
+    BASE_DIR = '/home/mzk/Desktop/KromApp/image-preparator/testFolder'
 else:
     logger = logging.getLogger('gunicorn.access')
     BASE_DIR = '/home/tran/test'
@@ -21,7 +20,7 @@ else:
 app = Flask(__name__)
 fh = logging.FileHandler('./logs/preparator.log', 'a', 'utf-8')
 logger.addHandler(fh)
-dataSender = None
+dataSender = ProcessWrapper()
 activeSenders = {}
 
 @app.route('/', defaults={'req_path': ''})
@@ -104,6 +103,12 @@ def get_processes():
 @app.route('/add_folder', methods=['POST'])
 def add_new_folder():
     dataSender.addFolder(request.args["folder"])
+    return '', 200
+
+@app.route('/remove_folder', methods=['POST'])
+def remove_folder():
+    dataSender.removeFolder(request.args["folder"])
+    return '', 200
 
 @app.route('/send_to_mzk', methods=['POST'])
 def schedule_send():
@@ -115,16 +120,18 @@ def schedule_send():
     globalId = dataSender.getGlobalId()
     activeSenders[globalId] = dataSender
     dataSender = ProcessWrapper()
+    return '', 200
     
 @app.route('/cancel_send', methods=['POST'])
 def cancel_send():
     chosenSender = activeSenders[request.args["globalId"]]
     chosenSender.killProcess()
     activeSenders.pop(request.args["globalId"])
+    return '', 200
 
 @app.route('/get_sender_processes', methods=['GET'])
 def get_sender_processes():
-    return jsonify(activeSenders)
+    return jsonify([activeSender.getJson() for activeSender in activeSenders])
 
 #End of endpoints
 

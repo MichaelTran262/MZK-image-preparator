@@ -1,4 +1,4 @@
-import Database as db
+from . import Database as db
 import logging
 import configparser
 

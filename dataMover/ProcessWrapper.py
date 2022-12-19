@@ -1,11 +1,11 @@
 import multiprocessing as mp
 import os
-import Database as db
+from . import Database as db
 import signal
 
 from uuid import uuid4
-from Folder import Folder
-from Utility import Utility
+from . import Folder
+from . import Utility
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -29,6 +29,7 @@ class ProcessWrapper():
             self.addFolder(folder)
         self.setStatus(self.status)
         self.scheduler = BackgroundScheduler()
+        self.totalSize = self.__calculateTotalSize()
 
     def sendThroughRsync(self):
         if self.setStatus != ProcsessStatus.SCHEDULED and self.setStatus != ProcsessStatus.IN_QUEUE:
@@ -46,7 +47,7 @@ class ProcessWrapper():
     
     def sendThroughRsyncProcess(self):
         self.utility.log("Sending files through Rsync")
-        if self.checkIfStringsAreValid([self.utility.port, self.utility.sshUser, self.utility.ipAddress]):
+        if self.__checkIfStringsAreValid([self.utility.port, self.utility.sshUser, self.utility.ipAddress]):
             raise Exception("Invalid ssh port, ssh user or ip address.")
         self.mpPid = os.getpid()
         session = self.utility.session
@@ -68,7 +69,7 @@ class ProcessWrapper():
                     self.utility.log("File " + file + " sent")
             self.utility.log("Files sent through Rsync")
     
-    def checkIfStringsAreValid(self, strings):
+    def __checkIfStringsAreValid(self, strings):
         for string in strings:
             if "&" in string:
                 return False
@@ -86,8 +87,10 @@ class ProcessWrapper():
     def addFolder(self, folder):
         self.folders[folder] = Folder(folder, self.utility)
         self.folders[folder].setStatus(self.status)
+        self.totalSize += self.folders[folder].getSize()
     
     def removeFolder(self, folder):
+        self.totalSize -= self.folders[folder].getSize()
         self.folders[folder] = None
     
     def getFolders(self):
@@ -135,10 +138,19 @@ class ProcessWrapper():
             .update({'scheduledFor': convertedTime})
     
     def scheduleSend(self):
-        self.scheduler.add_job(self.sendThroughRsync, 'date')
+        if not self.sendTime:
+            raise Exception("No send time specified")
+        self.scheduler.add_job(self.sendThroughRsync, 'date', run_date=self.sendTime)
         self.scheduler.start()
         self.setStatus(ProcsessStatus.SCHEDULED)
     
+    #Write a method which calculates the size of the folders and returns it
+    def __calculateTotalSize(self):
+        totalSize = 0
+        for folder in self.folders:
+            totalSize += self.folders[folder].getSize()
+        return totalSize
+
     def getPid(self):
         return self.mpPid
     
@@ -150,3 +162,13 @@ class ProcessWrapper():
     
     def getStatus(self):
         return self.status
+    
+    def getJson(self):
+        return {
+            "globalId": self.globalId,
+            "pid": self.mpPid,
+            "status": self.status,
+            "sendTime": self.sendTime,
+            "totalSize": self.totalSize,
+            "folders": [self.folders[folder].getJson() for folder in self.folders]
+        }
