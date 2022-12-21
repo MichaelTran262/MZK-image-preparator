@@ -17,7 +17,6 @@ class Utility():
         self.logger.addHandler(fh)
 
         config = self.loadConfig()
-        print(config.sections())
         socket = config["destination"]["ip"]
         if socket.find(":") == -1:
             self.ipAddress = socket

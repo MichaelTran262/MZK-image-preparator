@@ -34,13 +34,13 @@ class FolderDb(Base):
     __tablename__ = 'folder'
 
     folderId = Column(Integer, primary_key=True)
-    processId = Column(Integer, ForeignKey('Process.processWrapperId'), nullable=False)
+    processId = Column(Integer, ForeignKey('process.processId'), nullable=False)
     folderName = Column(String, nullable=False)
     folderPath = Column(String, nullable=False)
 
     def __repr__(self):
-        return f"Book(                      \
-            processId={self.processId!r},   \
+        return f"Book(                     \
+            processId={self.processId!r},  \
             folderName={self.folderName!r},\
             folderPath={self.folderPath!r}"
 

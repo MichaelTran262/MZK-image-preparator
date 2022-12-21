@@ -18,7 +18,7 @@ class ProcsessStatus():
 
 class ProcessWrapper():
 
-    def __init__(self, folders = None, sendTime = None):
+    def __init__(self, folders = [], sendTime = None):
 
         self.folders = {}
         self.utility = Utility.Utility()

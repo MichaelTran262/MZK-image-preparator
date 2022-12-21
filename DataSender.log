@@ -1,0 +1,13 @@
+2022-12-21 15:14:08,283 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2022-12-21 15:14:08,283 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2022-12-21 15:14:08,286 - werkzeug - INFO -  * Restarting with stat
+2022-12-21 15:14:09,434 - werkzeug - WARNING -  * Debugger is active!
+2022-12-21 15:14:09,547 - werkzeug - INFO -  * Debugger PIN: 123-353-164
+2022-12-21 15:15:20,634 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2022-12-21 15:15:20,635 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2022-12-21 15:15:20,637 - werkzeug - INFO -  * Restarting with stat
+2022-12-21 15:15:22,197 - werkzeug - WARNING -  * Debugger is active!
+2022-12-21 15:15:22,198 - werkzeug - INFO -  * Debugger PIN: 123-353-164
+2022-12-21 15:16:26,794 - werkzeug - INFO - 127.0.0.1 - - [21/Dec/2022 15:16:26] "[35m[1mPOST /add_folder?folder=xxxx HTTP/1.1[0m" 500 -
