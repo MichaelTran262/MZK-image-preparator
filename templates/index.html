@@ -42,10 +42,11 @@
                         row += '<td class="actions"><form action="prepare/' + myjson[i].dirname + '" method="post"> \
                                             <input type="submit" value="Připravit"</td>';
                     }
-                    
                 } else {
                     row += '<td></td>';
                 }
+                row += '<td class="actions"><form action="add_folder" method="post"> \
+                        <input type="submit" value="Přidat složku"</td>';
                 row += '</tr>';
                 tbody.append(row);
             }
