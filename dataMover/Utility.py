@@ -35,7 +35,7 @@ class Utility():
         self.session = self.initDb(username, password, dbName, postgresPort)
     
     def initDb(self, username, password, dbName, postgresPort):
-        URL = 'postgresql://{username}:{password}@localhost:{port}/{dbName}' \
+        URL = 'postgresql://{username}:{password}@db:{port}/{dbName}' \
             .format(
                 username=username,
                 password=password,

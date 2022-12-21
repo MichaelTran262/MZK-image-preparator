@@ -12,13 +12,13 @@ DEBUG = True
 
 if DEBUG:
     logger = logging.getLogger('werkzeug')
-    BASE_DIR = '/home/mzk/Desktop/KromApp/image-preparator/testFolder'
+    BASE_DIR = '/mnt/testFolder'
 else:
     logger = logging.getLogger('gunicorn.access')
     BASE_DIR = '/home/tran/test'
 
 app = Flask(__name__)
-fh = logging.FileHandler('./logs/preparator.log', 'a', 'utf-8')
+fh = logging.FileHandler('/app/logs/preparator.log', 'a', 'utf-8')
 logger.addHandler(fh)
 dataSender = ProcessWrapper()
 activeSenders = {}
@@ -165,4 +165,4 @@ def copy_images(src_dir, dirs):
 if __name__ == "__main__":
     max_proc = multiprocessing.cpu_count()
     app.logger.info(" * MAX processes available: " + str(max_proc))
-    app.run(debug=DEBUG)
+    app.run(debug=DEBUG, host='0.0.0.0', port=80)

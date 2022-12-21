@@ -1,0 +1,10 @@
+[source]
+folder = /mnt/STORAGE/SAMBA/data/
+[destination]
+ip = 193.113.155.223:XXXX
+folder = /data/goal
+user = chudacek
+[database]
+username = postgres
+password = password
+dbName = baseddata
