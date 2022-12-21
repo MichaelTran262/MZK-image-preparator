@@ -1,19 +1,32 @@
 # Image preparator
 Webová aplikace pro Kroměříž
 
-## Jak nainstalovat a spustit na linuxu
-Python 3 a [libvips](https://www.libvips.org/install.html) musí být k dispozici.
-Je nutné definovat kořenovou složku s obrázky v proměnné BASE_DIR.
+## Jak nainstalovat a spustit v Dockeru
+Rozjet `build.sh`<br>
+Rozjet `docker-compose`
 
 ```yaml
-python3 -m venv <nazev_venv> # např. python3 -m venv venv, vytvoří se složka venv
-source <nazev_venv>/bin/activate # např. source venv/bin/activate, aktivace nového lokálního Pythonu místo globálního
-pip install flask pyvips # instalace flask a pyvips
-python3 app.py
-```
-Bravo! Aplikace běží na [localhost:5000](http://localhost:5000).
-
-Pro deaktivaci lokálního Pythonu:
-```yaml
-source <nazev_venv>/bin/deactivate
+version: '3'
+services:
+  app:
+    image: krom-app
+    container_name: krom-app
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/app
+      - ./testFolder:/mnt/testFolder
+    command: "python3 /app/app.py"
+    depends_on:
+      - db
+    restart: always
+  db:
+    image: postgres:15
+    container_name: db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=baseddata
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
 ```
