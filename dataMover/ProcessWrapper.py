@@ -21,7 +21,7 @@ class ProcessWrapper():
     def __init__(self, folders = None, sendTime = None):
 
         self.folders = {}
-        self.utility = Utility()
+        self.utility = Utility.Utility()
         self.globalId = uuid4()
         self.mpPid = None
         self.status = ProcsessStatus.SCHEDULED if sendTime else ProcsessStatus.IN_QUEUE

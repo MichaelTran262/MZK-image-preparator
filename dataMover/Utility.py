@@ -2,6 +2,7 @@ from . import Database as db
 import logging
 import configparser
 
+from os.path import exists
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -16,22 +17,31 @@ class Utility():
         self.logger.addHandler(fh)
 
         config = self.loadConfig()
-        self.ipAddress = config["Destination"]["ip"].split(":")[0]
-        self.port = config["Destination"]["ip"].split(":")[-1]
-        self.destFolder = config["Destination"]["folder"]
-        self.sshUser = config["Destination"]["user"]
-        username = config["Database"]["username"]
-        password = config["Database"]["password"]
-        dbName = config["Database"]["dbName"]
+        print(config.sections())
+        socket = config["destination"]["ip"]
+        if socket.find(":") == -1:
+            self.ipAddress = socket
+            self.port = "22"
+        else:
+            self.ipAddress, self.port = socket.split(":")
+        self.destFolder = config["destination"]["folder"]
+        self.sshUser = config["destination"]["user"]
+        self.sourceFolder = config["source"]["folder"]
+        username = config["database"]["username"]
+        password = config["database"]["password"]
+        dbName = config["database"]["dbName"]
+        if "port" not in config["database"]:
+            postgresPort = "5432"
 
-        self.session = self.initDb(username, password, dbName)
+        self.session = self.initDb(username, password, dbName, postgresPort)
     
-    def initDb(self, username, password, dbName):
-        URL = 'postgresql://{username}:{password}@localhost:8090/{dbName}' \
+    def initDb(self, username, password, dbName, postgresPort):
+        URL = 'postgresql://{username}:{password}@localhost:{port}/{dbName}' \
             .format(
                 username=username,
                 password=password,
-                dbName=dbName
+                dbName=dbName,
+                port=postgresPort
             )
         engine = create_engine(URL)
         db.Base.metadata.create_all(engine)
@@ -43,5 +53,7 @@ class Utility():
     
     def loadConfig(self):
         config = configparser.ConfigParser()
-        config.read("senderConfig.txt")
+        if not exists("dataMover/senderConfig.txt"):
+            raise Exception("No config file found")
+        config.read("dataMover/senderConfig.txt")
         return config
