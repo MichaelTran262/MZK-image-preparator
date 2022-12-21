@@ -52,7 +52,7 @@ class Utility():
     
     def loadConfig(self):
         config = configparser.ConfigParser()
-        if not exists("dataMover/senderConfig.txt"):
+        if not exists("config/senderConfig.txt"):
             raise Exception("No config file found")
-        config.read("dataMover/senderConfig.txt")
+        config.read("config/senderConfig.txt")
         return config
