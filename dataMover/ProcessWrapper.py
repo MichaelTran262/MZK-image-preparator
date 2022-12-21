@@ -57,14 +57,17 @@ class ProcessWrapper():
         for folder in self.folders:
             for root, dirs, files in os.walk(folder):
                 for file in files:
+                    fullpath = os.path.join(root, file)
                     if "&" in file:
                         raise Exception("Invalid file name")
                     self.utility.log("Sending file " + file)
-                    os.system("rsync -avz -e \"ssh -p {sshPort}\" {file} {sshUser}@{ipAddress}:{file}".format(
+                    # TODO
+                    os.system("rsync -avz -e \"ssh -p {sshPort}\" {file} {sshUser}@{ipAddress}:{fileDest}".format(
                         sshPort=self.utility.port,
-                        file=file,
+                        file=fullpath,
                         sshUser=self.utility.sshUser,
-                        ipAddress=self.utility.ipAddress
+                        ipAddress=self.utility.ipAddress,
+                        fileDest=os.path.split(fullpath)[0]
                     ))
                     self.utility.log("File " + file + " sent")
             self.utility.log("Files sent through Rsync")

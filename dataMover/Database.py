@@ -43,6 +43,3 @@ class FolderDb(Base):
             processId={self.processId!r},  \
             folderName={self.folderName!r},\
             folderPath={self.folderPath!r}"
-
-if __name__ == '__main__':
-    pass
