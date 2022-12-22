@@ -40,12 +40,17 @@
                 if(myjson[i].hasDirTwo) {
                     if(!myjson[i].hasDirThree || !myjson[i].hasDirFour) {
                         row += '<td class="actions"><form action="prepare/' + myjson[i].dirname + '" method="post"> \
-                                            <input type="submit" value="Připravit"</td>';
+                                            <input class="btn-primary" type="submit" value="Připravit"></td>';
+                    } else {
+                        row += '<td class="actions"><form action="prepare/' + myjson[i].dirname + '" method="post"> \
+                                            <input class="btn-primary" type="submit" value="Připravit" disabled></td>';
                     }
-                    
                 } else {
-                    row += '<td></td>';
+                    row += '<td class="actions"><form action="prepare/' + myjson[i].dirname + '" method="post"> \
+                                        <input class="btn-primary" type="submit" value="Připravit" disabled></td>';
                 }
+                row += '<td class="actions"><form action="add_folder" method="post"> \
+                        <input class="btn-primary" type="submit" value="Přidat složku"></td>';
                 row += '</tr>';
                 tbody.append(row);
             }

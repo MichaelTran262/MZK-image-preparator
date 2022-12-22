@@ -1,3 +1,8 @@
 test
 venv
 logs
+postgres-data
+__pycache__/
+dataMover/__pycache__
+.DS_Store
+testFolder
