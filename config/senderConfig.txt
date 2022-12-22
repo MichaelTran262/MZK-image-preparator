@@ -1,8 +1,8 @@
 [source]
-folder = /mnt/STORAGE/SAMBA/data/
+folder = /mnt/testFolder
 [destination]
 ip = 193.113.155.223:XXXX
-folder = /data/goal
+folder = /mnt/testFolder
 user = chudacek
 [database]
 username = postgres

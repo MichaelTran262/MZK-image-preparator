@@ -18,10 +18,10 @@ class ProcsessStatus():
 
 class ProcessWrapper():
 
-    def __init__(self, folders = [], sendTime = None):
+    def __init__(self, util = Utility.Utility(), folders = [], sendTime = None):
 
         self.folders = {}
-        self.utility = Utility.Utility()
+        self.utility = util
         self.globalId = uuid4()
         self.mpPid = None
         self.status = ProcsessStatus.SCHEDULED if sendTime else ProcsessStatus.IN_QUEUE

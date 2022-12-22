@@ -6,21 +6,23 @@ import multiprocessing
 import os
 import logging
 from preparator.Preparator import Preparator
+from dataMover.Utility import Utility
 
 DEBUG = True
 
+app = Flask(__name__)
+util = Utility()
+dataSender = ProcessWrapper(util)
+activeSenders = {}
+
 if DEBUG:
     logger = logging.getLogger('werkzeug')
-    BASE_DIR = '/mnt/testFolder'
+    BASE_DIR = util.sourceFolder
 else:
     logger = logging.getLogger('gunicorn.access')
-    BASE_DIR = '/home/tran/test'
-
-app = Flask(__name__)
+    BASE_DIR = util.sourceFolder
 fh = logging.FileHandler('/app/logs/preparator.log', 'a', 'utf-8')
 logger.addHandler(fh)
-dataSender = ProcessWrapper()
-activeSenders = {}
 
 @app.route('/', defaults={'req_path': ''})
 @app.route('/home', defaults={'req_path': ''})

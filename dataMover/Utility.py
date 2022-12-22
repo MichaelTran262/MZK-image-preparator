@@ -6,6 +6,7 @@ from os.path import exists
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+#Static class to hold the database session
 class Utility():
 
     def __init__(self):
