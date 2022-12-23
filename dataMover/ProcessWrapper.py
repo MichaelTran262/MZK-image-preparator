@@ -22,7 +22,7 @@ class ProcessWrapper():
 
         self.folders = {}
         self.utility = util
-        self.globalId = uuid4()
+        self.globalId = str(uuid4())
         self.mpPid = None
         self.status = ProcsessStatus.SCHEDULED if sendTime else ProcsessStatus.IN_QUEUE
         for folder in folders:
@@ -88,7 +88,7 @@ class ProcessWrapper():
         os.kill(pid, signal.SIGTERM)
     
     def addFolder(self, folder):
-        self.folders[folder] = Folder(folder, self.utility)
+        self.folders[folder] = Folder.Folder(folder, self.utility)
         self.folders[folder].setStatus(self.status)
         self.totalSize += self.folders[folder].getSize()
     
@@ -109,7 +109,7 @@ class ProcessWrapper():
                 start=None,
                 stop=None,
                 forceful=None,
-                procsessStatus=status)
+                processStatus=status)
             session.add(row)
             session.commit()
             self.status = status

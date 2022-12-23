@@ -66,17 +66,20 @@ def get_processes():
 
 @app.route('/add_folder', methods=['POST'])
 def add_new_folder():
+    global dataSender
     dataSender.addFolder(request.args["folder"])
     return '', 200
 
 @app.route('/remove_folder', methods=['POST'])
 def remove_folder():
+    global dataSender
     dataSender.removeFolder(request.args["folder"])
     return '', 200
 
 @app.route('/send_to_mzk', methods=['POST'])
 def schedule_send():
-    if request.args["time"]:
+    global dataSender
+    if "time" in request.args.keys():
         dataSender.setSendTime(request.args["time"])
     else:
         dataSender.setSendTime()
@@ -88,6 +91,8 @@ def schedule_send():
     
 @app.route('/cancel_send', methods=['POST'])
 def cancel_send():
+    global activeSenders
+    global dataSender
     chosenSender = activeSenders[request.args["globalId"]]
     chosenSender.killProcess()
     activeSenders.pop(request.args["globalId"])
@@ -95,7 +100,7 @@ def cancel_send():
 
 @app.route('/get_sender_processes', methods=['GET'])
 def get_sender_processes():
-    return jsonify([activeSender.getJson() for activeSender in activeSenders])
+    return jsonify([activeSender.getJson() for activeSender in activeSenders.values()])
 
 #End of endpoints
 

@@ -10,13 +10,13 @@ class ProcessDb(Base):
     processId = Column(Integer, primary_key=True)
     globalId = Column(String(40), nullable=False)
     pid = Column(Integer, nullable=True)
-    scheduledFor = Column(DateTime, nullable=False)
+    scheduledFor = Column(DateTime, nullable=True)
     start = Column(DateTime, nullable=True)
     stop = Column(DateTime, nullable=True)
     forceful = Column(Boolean, nullable=True)
     processStatus = Column(Integer, nullable=False)
 
-    folder = relationship('Folder', backref='folder')
+    folder = relationship('FolderDb', backref='folder')
     __table_args__ = (UniqueConstraint('pid', 'stop', name='pid_stop_constaint'),)
 
     def __repr__(self):
