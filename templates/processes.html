@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<div class="row p-3">
+  <div class="container pt-3">
+    <h2>Záznamy procesů</h2>      
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>id</th>
+          <th>Název</th>
+          <th>Datum vytvoření</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for process in processes.items %}
+            <tr>
+                <td>{{ process.id }}</th>
+                <td>{{ process.name }}</th>
+                <td class="border-left">{{ archive.date_created.strftime('%d.%m.%Y, %H:%M') }}</td>
+                <td>{{ process.state }}</th>
+            </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="text-right">
+      <a href="{{ url_for('get_sender_processes', page=processes.prev_num) }}" class="btn btn-outline-dark {% if processes.page == 1 %}disabled{% endif %}">
+          &laquo;
+      </a>
+      <!-- Loop through the number of pages to display a link for each-->
+      {% for page_num in processes.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+      
+      {% if page_num %}
+       <!-- Check for the active page and set the link to "Active"-->
+              {% if archives.page == page_num %}
+              <a href="{{ url_for('batch_records', page=page_num) }}"
+              class="btn btn-dark">
+                  {{ page_num }}
+              </a>
+              {% else %}
+              <a href="{{ url_for('batch_records', page=page_num) }}"
+              class="btn btn-outline-dark">
+                  {{ page_num }}
+              </a>
+              {% endif %}
+          {% else %}
+              ...
+          {% endif %}
+      {% endfor %}    
+      <a href="{{ url_for('get_sender_processes', page=archives.next_num) }}" class="btn btn-outline-dark {% if archives.page == archives.pages %}disabled{% endif %}">
+          &raquo;
+      </a>
+    </div>
+    <p class="text-right mt-3">
+        Stránka {{ archives.page }} z {{ archives.pages }}
+    </p>
+  </div>
+</div>
+{% endblock %}
