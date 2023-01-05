@@ -103,9 +103,8 @@ def cancel_send():
 
 @app.route('/get_sender_processes', methods=['GET'])
 def get_sender_processes():
-    processes = ProcessDb.query()
-    return render_template("processes.html", processes=processes);
-    #return jsonify([activeSender.getJson() for activeSender in activeSenders])
+    global activeSenders
+    return jsonify([sender.getJson() for sender in activeSenders.values()])
 
 #End of endpoints
 
