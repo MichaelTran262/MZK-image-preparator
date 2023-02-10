@@ -12,7 +12,7 @@ class Utility():
     def __init__(self):
         self.logger = logging.getLogger("werkzeug")
         self.logger.setLevel(logging.DEBUG)
-        fh = logging.FileHandler("/app/logs/DataSender.log")
+        fh = logging.FileHandler("/logs/DataSender.log")
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         fh.setFormatter(formatter)
         self.logger.addHandler(fh)

@@ -1,13 +1,10 @@
-from dataMover.ProcessWrapper import ProcessWrapper
-from audioop import mul
-from apscheduler.schedulers.background import BackgroundScheduler
-from flask import Flask, request, render_template, url_for, abort, send_file, redirect, request, jsonify
+from flask import Flask, render_template, abort, request, jsonify
 import multiprocessing
 import os
 import logging
 from preparator.Preparator import Preparator
+from dataMover.ProcessWrapper import ProcessWrapper
 from dataMover.Utility import Utility
-from dataMover.Database import ProcessDb, FolderDb
 
 DEBUG = True
 
@@ -22,7 +19,7 @@ if DEBUG:
 else:
     logger = logging.getLogger('gunicorn.access')
     BASE_DIR = util.sourceFolder
-fh = logging.FileHandler('/app/logs/preparator.log', 'a', 'utf-8')
+fh = logging.FileHandler('/logs/preparator.log', 'a', 'utf-8')
 logger.addHandler(fh)
 
 # Endpointy začínají zde
@@ -63,7 +60,10 @@ def is_running():
 
 @app.route('/processes', methods=['GET'])
 def get_processes():
-    pass
+    global activeSenders
+    if activeSenders is None:
+        abort(404)
+    return jsonify([sender.getJson() for sender in activeSenders.values()])
 
 #Chudyho endpointy
 

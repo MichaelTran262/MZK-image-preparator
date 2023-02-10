@@ -6,8 +6,9 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./:/app
+      - ./app:/app
       - ./testFolder:/mnt/testFolder
+      - ./logs:/logs
     command: "python3 /app/app.py"
     depends_on:
       - db
@@ -19,5 +20,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=baseddata
+    ports:
+      - "5432:5432"
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
