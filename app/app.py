@@ -60,6 +60,14 @@ def is_running():
 
 @app.route('/processes', methods=['GET'])
 def get_processes():
+    page = request.args.get('page', 1, type=int)
+    procs = dataSender.get_processes_by_page(page)
+    if procs is None:
+        abort(404)
+    return render_template('processes.html', processes=procs)
+
+@app.route('/active-processes', methods=['GET'])
+def get_active_processes():
     global activeSenders
     if activeSenders is None:
         abort(404)

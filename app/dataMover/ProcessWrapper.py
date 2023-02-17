@@ -154,6 +154,16 @@ class ProcessWrapper():
             totalSize += self.folders[folder].getSize()
         return totalSize
 
+    def get_processes_api(self):
+        session = self.utility.session
+        procs = session.query(db.ProcessDb).all()
+        return [proc.serialize() for proc in procs]
+    
+    def get_processes_by_page(self, page):
+        session = self.utility.session
+        procs = db.ProcessDb.query.paginate(page=page, per_page=50)
+        return procs
+
     def getPid(self):
         return self.mpPid
     

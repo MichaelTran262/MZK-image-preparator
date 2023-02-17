@@ -1,9 +1,8 @@
 from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import declarative_base, relationship
+from flask_sqlalchemy import SQLAlchemy
 
-Base = declarative_base()
-
-class ProcessDb(Base):
+class ProcessDb(Base.Model):
 
     __tablename__ = 'process'
 
@@ -28,8 +27,19 @@ class ProcessDb(Base):
             scheduledFor={self.scheduledFor!r}  \
             processStatus={self.processStatus!r}\
             forcefull={self.forceful!r})"
+    
+    def serialize(self):
+        return {
+            'globalId' : self.globalId,
+            'pid' : self.pid,
+            'start' : self.start,
+            'stop' : self.stop,
+            'scheduledFor' : self.scheduledFor,
+            'processStatus' : self.processStatus,
+            'forcefull' : self.forceful
+        }
 
-class FolderDb(Base):
+class FolderDb(Base.Model):
     
     __tablename__ = 'folder'
 
