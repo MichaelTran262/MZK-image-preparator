@@ -1,10 +1,8 @@
-from . import Database
 import logging
 import configparser
 import os
 from os.path import exists
 from flask import current_app
-from .Database import db
 
 #Static class to hold the database session
 class Utility():
@@ -32,22 +30,7 @@ class Utility():
         dbName = config["database"]["dbName"]
         if "port" not in config["database"]:
             postgresPort = "5432"
-        self.session = db.session
-        #self.session = self.initDb(username, password, dbName, postgresPort)
-    
-    def initDb(self, username, password, dbName, postgresPort):
-        URL = 'postgresql://{username}:{password}@db:{port}/{dbName}' \
-            .format(
-                username=username,
-                password=password,
-                dbName=dbName,
-                port=postgresPort
-            )
-        current_app.config.update(
-            SQLALCHEMY_DATABASE_URI = URL
-        )
-        db.create_all(current_app)
-        
+
     def log(self, message):
         self.logger.info(message)
     

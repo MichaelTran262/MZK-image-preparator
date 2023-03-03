@@ -1,25 +1,21 @@
-from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, UniqueConstraint
-from sqlalchemy.orm import declarative_base, relationship
 from flask_sqlalchemy import SQLAlchemy
-
-db = SQLAlchemy()
-db.create_all()
+from . import db
 
 class ProcessDb(db.Model):
 
     __tablename__ = 'process'
 
-    processId = Column(Integer, primary_key=True)
-    globalId = Column(String(40), nullable=False)
-    pid = Column(Integer, nullable=True)
-    scheduledFor = Column(DateTime, nullable=True)
-    start = Column(DateTime, nullable=True)
-    stop = Column(DateTime, nullable=True)
-    forceful = Column(Boolean, nullable=True)
-    processStatus = Column(Integer, nullable=False)
+    processId = db.Column(db.Integer, primary_key=True)
+    globalId = db.Column(db.String(40), nullable=False)
+    pid = db.Column(db.Integer, nullable=True)
+    scheduledFor = db.Column(db.DateTime, nullable=True)
+    start = db.Column(db.DateTime, nullable=True)
+    stop = db.Column(db.DateTime, nullable=True)
+    forceful = db.Column(db.Boolean, nullable=True)
+    processStatus = db.Column(db.Integer, nullable=False)
 
-    folder = relationship('FolderDb', backref='folder')
-    __table_args__ = (UniqueConstraint('pid', 'stop', name='pid_stop_constaint'),)
+    folder = db.relationship('FolderDb', backref='folder')
+    __table_args__ = (db.UniqueConstraint('pid', 'stop', name='pid_stop_constaint'),)
 
     def __repr__(self):
         return f"Book(                          \
@@ -46,10 +42,10 @@ class FolderDb(db.Model):
     
     __tablename__ = 'folder'
 
-    folderId = Column(Integer, primary_key=True)
-    processId = Column(Integer, ForeignKey('process.processId'), nullable=False)
-    folderName = Column(String, nullable=False)
-    folderPath = Column(String, nullable=False)
+    folderId = db.Column(db.Integer, primary_key=True)
+    processId = db.Column(db.Integer, db.ForeignKey('process.processId'), nullable=False)
+    folderName = db.Column(db.String, nullable=False)
+    folderPath = db.Column(db.String, nullable=False)
 
     def __repr__(self):
         return f"Book(                     \

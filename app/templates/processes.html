@@ -7,25 +7,25 @@
     <table class="table table-bordered">
       <thead>
         <tr>
-          <th>id</th>
-          <th>Název</th>
-          <th>Datum vytvoření</th>
+          <th>globalID</th>
+          <th>PID</th>
+          <th>Plánovaný čas odeslání</th>
           <th>Status</th>
         </tr>
       </thead>
       <tbody>
         {% for process in processes.items %}
             <tr>
-                <td>{{ process.id }}</th>
-                <td>{{ process.name }}</th>
-                <td class="border-left">{{ archive.date_created.strftime('%d.%m.%Y, %H:%M') }}</td>
-                <td>{{ process.state }}</th>
+                <td>{{ process.globalId }}</th>
+                <td>{{ process.pid }}</th>
+                <td class="border-left">{{ process.scheduledFor.strftime('%d.%m.%Y, %H:%M') }}</td>
+                <td>{{ process.processStatus }}</th>
             </tr>
         {% endfor %}
       </tbody>
     </table>
     <div class="text-right">
-      <a href="{{ url_for('get_sender_processes', page=processes.prev_num) }}" class="btn btn-outline-dark {% if processes.page == 1 %}disabled{% endif %}">
+      <a href="{{ url_for('main.get_processes', page=processes.prev_num) }}" class="btn btn-outline-dark {% if processes.page == 1 %}disabled{% endif %}">
           &laquo;
       </a>
       <!-- Loop through the number of pages to display a link for each-->
@@ -33,13 +33,13 @@
                 
       {% if page_num %}
        <!-- Check for the active page and set the link to "Active"-->
-              {% if proccesses.page == page_num %}
-              <a href="{{ url_for('home', page=page_num) }}"
+              {% if processes.page == page_num %}
+              <a href="{{ url_for('main.get_processes', page=page_num) }}"
               class="btn btn-dark">
                   {{ page_num }}
               </a>
               {% else %}
-              <a href="{{ url_for('home', page=page_num) }}"
+              <a href="{{ url_for('main.get_processes', page=page_num) }}"
               class="btn btn-outline-dark">
                   {{ page_num }}
               </a>
@@ -48,12 +48,12 @@
               ...
           {% endif %}
       {% endfor %}    
-      <a href="{{ url_for('home', page=processes.next_num) }}" class="btn btn-outline-dark {% if processes.page == processes.pages %}disabled{% endif %}">
+      <a href="{{ url_for('main.get_processes', page=processes.next_num) }}" class="btn btn-outline-dark {% if processes.page == processes.pages %}disabled{% endif %}">
           &raquo;
       </a>
     </div>
     <p class="text-right mt-3">
-        Stránka {{ archives.page }} z {{ archives.pages }}
+        Stránka {{ processes.page }} z {{ processes.pages }}
     </p>
   </div>
 </div>

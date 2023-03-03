@@ -1,8 +1,8 @@
 from random import randint
 from sqlalchemy.exc import IntegrityError
 from faker import Faker
-from app.dataMover import Database as md
-from dataMover.Utility import Utility
+from app import models as md
+from app import db
 
 def processes(count=100):
     fake = Faker()
@@ -15,7 +15,6 @@ def processes(count=100):
                         stop=fake.future_date(),
                         forceful=False,
                         processStatus=0)
-        db = Utility()
         db.session.add(p)
         try:
             db.session.commit()
@@ -29,7 +28,6 @@ def folders(count=100):
     while i < count:
         f = md.FolderDb(folderName=fake.file_name(extension=".tif"),
                         folderPath=fake.file_path(depth=3))
-        db = Utility()
         db.session.add(f)
         try:
             db.session.commit()

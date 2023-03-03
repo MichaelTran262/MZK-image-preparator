@@ -1,11 +1,12 @@
+
 import multiprocessing as mp
 import os
-from . import Database
+from .. import models
 import signal
 
 from uuid import uuid4
 from . import Folder
-from . import Utility
+from ..Utility import Utility
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -18,7 +19,7 @@ class ProcsessStatus():
 
 class ProcessWrapper():
 
-    def __init__(self, util = Utility.Utility(), folders = [], sendTime = None):
+    def __init__(self, util = None, folders = [], sendTime = None):
 
         self.folders = {}
         self.utility = util
@@ -51,8 +52,8 @@ class ProcessWrapper():
             raise Exception("Invalid ssh port, ssh user or ip address.")
         self.mpPid = os.getpid()
         session = self.utility.session
-        session.query(Database.ProcessDb)                         \
-            .filter(Database.ProcessDb.globalId == self.globalId) \
+        session.query(models.ProcessDb)                         \
+            .filter(models.ProcessDb.globalId == self.globalId) \
             .update({'pid': os.getpid()})
         for folder in self.folders:
             for root, dirs, files in os.walk(folder):
@@ -102,7 +103,7 @@ class ProcessWrapper():
     def setStatus(self, status):
         session = self.utility.session
         if status == ProcsessStatus.SCHEDULED:
-            row = Database.ProcessDb(
+            row = models.ProcessDb(
                 globalId=self.globalId,
                 pid=None,
                 scheduledFor=None,
@@ -116,13 +117,13 @@ class ProcessWrapper():
         elif status == ProcsessStatus.IN_QUEUE:
             self.status = status
         elif status == ProcsessStatus.BEING_SENT:
-            session.query(Database.ProcessDb)                         \
-                .filter(Database.ProcessDb.globalId == self.globalId) \
+            session.query(models.ProcessDb)                         \
+                .filter(models.ProcessDb.globalId == self.globalId) \
                 .update({'start': datetime.now()})
             self.status = status
         elif status == ProcsessStatus.FINISHED:
-            session.query(Database.ProcessDb)                        \
-                .filter(Database.ProcessDb.globalId == self.globalId)\
+            session.query(models.ProcessDb)                        \
+                .filter(models.ProcessDb.globalId == self.globalId)\
                 .update({'stop': datetime.now()})
             self.status = status
         self.status = status
@@ -136,8 +137,8 @@ class ProcessWrapper():
             convertedTime = datetime.now()
         self.sendTime = convertedTime
         session = self.utility.session
-        session.query(Database.ProcessDb)                         \
-            .filter(Database.ProcessDb.globalId == self.globalId) \
+        session.query(models.ProcessDb)                         \
+            .filter(models.ProcessDb.globalId == self.globalId) \
             .update({'scheduledFor': convertedTime})
     
     def scheduleSend(self):
@@ -154,16 +155,19 @@ class ProcessWrapper():
             totalSize += self.folders[folder].getSize()
         return totalSize
 
+    @classmethod
     def get_processes_api(self):
         session = self.utility.session
-        procs = session.query(Database.ProcessDb).all()
+        procs = session.query(models.ProcessDb).all()
         return [proc.serialize() for proc in procs]
     
-    def get_processes_by_page(self, page):
-        session = self.utility.session
-        procs = Database.ProcessDb.query.paginate(page=page, per_page=50)
+    @classmethod
+    def get_processes_by_page(self, page = 1):
+        print(page)
+        procs = models.ProcessDb.query.paginate(page=page, per_page=10)
         return procs
 
+    @classmethod
     def getPid(self):
         return self.mpPid
     
