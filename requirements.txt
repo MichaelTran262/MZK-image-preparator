@@ -17,6 +17,5 @@ tzdata==2022.5
 tzlocal==4.2
 Werkzeug==2.2.2
 SQLAlchemy>=1.4.45
-psycopg-binary==3.1.6
-psycopg2==2.9.5
+psycopg2-binary==2.9.5
 Faker==16.6.1

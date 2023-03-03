@@ -2,7 +2,10 @@ from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, U
 from sqlalchemy.orm import declarative_base, relationship
 from flask_sqlalchemy import SQLAlchemy
 
-class ProcessDb(Base.Model):
+db = SQLAlchemy()
+db.create_all()
+
+class ProcessDb(db.Model):
 
     __tablename__ = 'process'
 
@@ -39,7 +42,7 @@ class ProcessDb(Base.Model):
             'forcefull' : self.forceful
         }
 
-class FolderDb(Base.Model):
+class FolderDb(db.Model):
     
     __tablename__ = 'folder'
 

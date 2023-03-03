@@ -1,6 +1,6 @@
 import multiprocessing as mp
 import os
-from . import Database as db
+from . import Database
 import signal
 
 from uuid import uuid4
@@ -51,8 +51,8 @@ class ProcessWrapper():
             raise Exception("Invalid ssh port, ssh user or ip address.")
         self.mpPid = os.getpid()
         session = self.utility.session
-        session.query(db.ProcessDb)                         \
-            .filter(db.ProcessDb.globalId == self.globalId) \
+        session.query(Database.ProcessDb)                         \
+            .filter(Database.ProcessDb.globalId == self.globalId) \
             .update({'pid': os.getpid()})
         for folder in self.folders:
             for root, dirs, files in os.walk(folder):
@@ -102,7 +102,7 @@ class ProcessWrapper():
     def setStatus(self, status):
         session = self.utility.session
         if status == ProcsessStatus.SCHEDULED:
-            row = db.ProcessDb(
+            row = Database.ProcessDb(
                 globalId=self.globalId,
                 pid=None,
                 scheduledFor=None,
@@ -116,13 +116,13 @@ class ProcessWrapper():
         elif status == ProcsessStatus.IN_QUEUE:
             self.status = status
         elif status == ProcsessStatus.BEING_SENT:
-            session.query(db.ProcessDb)                         \
-                .filter(db.ProcessDb.globalId == self.globalId) \
+            session.query(Database.ProcessDb)                         \
+                .filter(Database.ProcessDb.globalId == self.globalId) \
                 .update({'start': datetime.now()})
             self.status = status
         elif status == ProcsessStatus.FINISHED:
-            session.query(db.ProcessDb)                        \
-                .filter(db.ProcessDb.globalId == self.globalId)\
+            session.query(Database.ProcessDb)                        \
+                .filter(Database.ProcessDb.globalId == self.globalId)\
                 .update({'stop': datetime.now()})
             self.status = status
         self.status = status
@@ -136,8 +136,8 @@ class ProcessWrapper():
             convertedTime = datetime.now()
         self.sendTime = convertedTime
         session = self.utility.session
-        session.query(db.ProcessDb)                         \
-            .filter(db.ProcessDb.globalId == self.globalId) \
+        session.query(Database.ProcessDb)                         \
+            .filter(Database.ProcessDb.globalId == self.globalId) \
             .update({'scheduledFor': convertedTime})
     
     def scheduleSend(self):
@@ -156,12 +156,12 @@ class ProcessWrapper():
 
     def get_processes_api(self):
         session = self.utility.session
-        procs = session.query(db.ProcessDb).all()
+        procs = session.query(Database.ProcessDb).all()
         return [proc.serialize() for proc in procs]
     
     def get_processes_by_page(self, page):
         session = self.utility.session
-        procs = db.ProcessDb.query.paginate(page=page, per_page=50)
+        procs = Database.ProcessDb.query.paginate(page=page, per_page=50)
         return procs
 
     def getPid(self):

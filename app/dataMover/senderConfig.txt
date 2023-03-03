@@ -1,0 +1,10 @@
+[source]
+folder = /mnt/testFolder
+[destination]
+ip = 193.113.155.223:XXXX
+folder = /mnt/testFolder
+user = chudacek
+[database]
+username = postgres
+password = password
+dbName = baseddata

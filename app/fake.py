@@ -1,7 +1,7 @@
 from random import randint
 from sqlalchemy.exc import IntegrityError
 from faker import Faker
-from dataMover import Database as md
+from app.dataMover import Database as md
 from dataMover.Utility import Utility
 
 def processes(count=100):

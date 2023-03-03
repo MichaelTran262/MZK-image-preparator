@@ -1,7 +1,17 @@
 #!/bin/bash
 APP=krom-app
 docker build . -t ${APP}
-mkdir testFolder
-mkdir logs
-touch logs/Preparator.log
-touch logs/DataMover.log
+if [ ! -d "./testFolder" ];
+then
+    mkdir testFolder
+else
+    echo "testFolder exists, skipping"
+fi
+if [ ! -d "./logs" ];
+then
+    mkdir logs
+    touch logs/Preparator.log
+    touch logs/DataMover.log
+else
+    echo "logs directory exists, skipping"
+fi

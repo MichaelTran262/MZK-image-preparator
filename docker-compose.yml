@@ -4,12 +4,15 @@ services:
     image: krom-app
     container_name: krom-app
     ports:
-      - "8080:80"
+      - "5000:5000"
     volumes:
-      - ./app:/app
+#      - ./:/image-preparator
       - ./testFolder:/mnt/testFolder
       - ./logs:/logs
-    command: "python3 /app/app.py"
+    command: "flask run"
+    environment:
+      - FLASK_APP=flask_app.py
+      - FLASK_DEBUG=1
     depends_on:
       - db
     restart: always
