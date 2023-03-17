@@ -4,16 +4,14 @@ USER root
 
 RUN apt update
 RUN apt -y install libvips libvips-dev libvips-tools
-RUN mkdir /app
+RUN mkdir /preparator
 
-COPY requirements.txt /
+COPY . /preparator
 
-WORKDIR /
+WORKDIR /preparator
 
 RUN pip install -r requirements.txt
 
-#EXPOSE 5000
-
-WORKDIR /app
+EXPOSE 5000
 
 #CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0"]

@@ -49,10 +49,25 @@
                     row += '<td class="actions"><form action="prepare/' + myjson[i].dirname + '" method="post"> \
                                         <input class="btn-primary" type="submit" value="Připravit" disabled></td>';
                 }
-                row += '<td class="actions"><form action="add_folder" method="post"> \
-                        <input class="btn-primary" type="submit" value="Přidat složku"></td>';
+                row += '<td class="actions"><form action="add_folder" method="post" onsubmit="changeStatus(this)"> \
+                    <input class="btn-primary" type="submit" value="Přidat složku"></td>';
                 row += '</tr>';
                 tbody.append(row);
+            }
+        }
+
+        function changeStatus(form) {
+            console.log("Clicked");
+            $('#btn-primary').on('click', function() {
+                if($(this).val() == 'Smazat složku')
+                    $(this).val('Přidat složku');
+                else{
+                    $(this).val('Smazat složku');
+                }});
+            if($('#btn-primary').val() == 'Smazat složku')
+                form.action('add_folder');
+            else{
+                form.action('remove_folder');
             }
         }
         
