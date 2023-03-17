@@ -3,11 +3,11 @@ import multiprocessing
 import os
 from . import main
 from ..preparator.Preparator import Preparator
-from ..dataMover.ProcessWrapper import ProcessWrapper
+#from ..dataMover.ProcessWrapper import ProcessWrapper
 from ..Utility import Utility
-from .. import db
+#from .. import db
 
-dataSender = ProcessWrapper(db)
+#dataSender = ProcessWrapper(db)
 BASE_DIR = '/mnt/testFolder'
 # Endpointy začínají zde
 
@@ -44,73 +44,7 @@ def is_running():
     dict = {}
     dict['proc_count'] = len(multiprocessing.active_children())
     return jsonify(dict)
-
-@main.route('/processes', methods=['GET'])
-def get_processes():
-    page = request.args.get('page', 1, type=int)
-    print(page)
-    procs = ProcessWrapper.get_processes_by_page(page)
-    if procs is None:
-        abort(404)
-    return render_template('processes.html', processes=procs)
-
-@main.route('/active-processes', methods=['GET'])
-def get_active_processes():
-    #global activeSenders
-    #if activeSenders is None:
-        #abort(404)
-    #return jsonify([sender.getJson() for sender in activeSenders.values()])
-    return '', 200
-
-#Chudyho endpointy
-
-@main.route('/add_folder/<path:req_path>', methods=['POST'])
-def add_new_folder(req_path):
-    if request.method == 'POST':
-        abs_path = os.path.join(BASE_DIR, req_path)
-        dirs = {
-            2: abs_path + '/2',
-            3: abs_path + '/3',
-            4: abs_path + '/4'
-        }
-        print(abs_path);
-        return '', 204
-    else:
-        return '', 204
-
-@main.route('/remove_folder', methods=['POST'])
-def remove_folder():
-    #global dataSender
-    #dataSender.removeFolder(request.args["folder"])
-    return '', 200
-
-@main.route('/send_to_mzk', methods=['POST'])
-def schedule_send():
-    #global dataSender
-    #if "time" in request.args.keys():
-    #    dataSender.setSendTime(request.args["time"])
-    #else:
-    #    dataSender.setSendTime()
-    #dataSender.scheduleSend()
-    #globalId = dataSender.getGlobalId()
-    activeSenders[globalId] = dataSender
-    #dataSender = ProcessWrapper()
-    return '', 200
     
-@main.route('/cancel_send', methods=['POST'])
-def cancel_send():
-    #global activeSenders
-    #global dataSender
-    #chosenSender = activeSenders[request.args["globalId"]]
-    #chosenSender.killProcess()
-    #activeSenders.pop(request.args["globalId"])
-    return '', 200
-
-@main.route('/get_sender_processes', methods=['GET'])
-def get_sender_processes():
-    ProcessWrapper.get_processes_by_page(1);
-    return jsonify([sender.getJson() for sender in activeSenders.values()])
-
 #End of endpoints
 
 def check_dir(path):
