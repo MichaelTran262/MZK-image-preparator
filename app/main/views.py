@@ -1,13 +1,14 @@
-from flask import Flask, render_template, abort, request, jsonify, current_app
+from flask import Flask, render_template, abort, request, jsonify
+from flask import current_app as app
 import multiprocessing
 import os
+import urllib.parse
 from . import main
 from ..preparator.Preparator import Preparator
 from ..dataMover.ProcessWrapper import ProcessWrapper
 #from .. import db
 
 #dataSender = ProcessWrapper(db)
-BASE_DIR = '/mnt/testFolder'
 # Endpointy začínají zde
 
 @main.route('/', defaults={'req_path': ''})
@@ -15,26 +16,49 @@ BASE_DIR = '/mnt/testFolder'
 @main.route('/<path:req_path>')
 @main.route('/home/<path:req_path>')
 def index(req_path):
-    abs_path = os.path.join(BASE_DIR, req_path)
+    abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
 
     if not os.path.exists(abs_path):
-        current_app.logger.error("BASE_DIR does not exist")
+        app.logger.error("BASE_DIR does not exist")
         return abort(404)
 
-    dirs = Preparator.get_folders(abs_path)         
-    return render_template('index.html', files=dirs)
+    if req_path != '':
+        prev_path, tail = os.path.split(req_path)
+        if prev_path == '':
+            prev_path = ''
+        else:
+            prev_path = '/' + prev_path
+    else:
+        prev_path = ''
+
+    dirs = Preparator.get_folders(abs_path, req_path)
+    file_count = Preparator.get_file_count(abs_path, req_path)
+    return render_template('index.html', files=dirs, file_count=file_count, prev_page='/home'+prev_path)
 
 @main.route('/prepare/<path:req_path>', methods=['POST', 'GET'])
 def prepare(req_path):
     if request.method == 'POST':
-        abs_path = os.path.join(BASE_DIR, req_path)
-        dirs = {
-            2: abs_path + '/2',
-            3: abs_path + '/3',
-            4: abs_path + '/4'
-        }
-        Preparator.prepare_folder(dirs, BASE_DIR, current_app)
-        return '', 204
+        message = Preparator.prepare_folder(app.config['SRC_FOLDER'], app, req_path)
+        abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
+        files = Preparator.get_folders(abs_path, req_path)
+        file_count = Preparator.get_file_count(abs_path, req_path)
+        head, tail = os.path.split(req_path)
+        return_path = urllib.parse.quote("/home/" + str(head))
+        if message != '':
+            return render_template('modal.html', 
+                msg=message, 
+                files=files, 
+                file_count=file_count, 
+                return_path=return_path)
+        else:
+            return render_template('modal_success.html', 
+                msg="Konverze probíhá",
+                files=files,
+                file_count=file_count,
+                return_path=return_path)
+    elif request.method == 'GET':
+        converted_file_count, total_files = Preparator.progress(req_path, app)
+        return jsonify({'converted': converted_file_count, 'total_files': total_files})
     else:
         return '', 204
 
@@ -64,24 +88,25 @@ def get_active_processes():
 #Chudyho endpointy
 
 @main.route('/add_folder/<path:req_path>', methods=['POST'])
+@main.route('/add_folder/home/<path:req_path>', methods=['POST'])
 def add_new_folder(req_path):
     if request.method == 'POST':
-        abs_path = os.path.join(BASE_DIR, req_path)
+        abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
         dirs = {
             2: abs_path + '/2',
             3: abs_path + '/3',
             4: abs_path + '/4'
         }
-        print(abs_path);
-        return '', 204
+        print(abs_path)
+        return jsonify({"status": "ok"})
     else:
-        return '', 204
+        return jsonify({"status": "ok"})
 
 @main.route('/remove_folder', methods=['POST'])
 def remove_folder():
     #global dataSender
     #dataSender.removeFolder(request.args["folder"])
-    return '', 200
+    return jsonify({"status": "ok"})
 
 @main.route('/send_to_mzk', methods=['POST'])
 def schedule_send():

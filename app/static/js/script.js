@@ -22,6 +22,6 @@ $( document ).ready(function() {
             })
     }
     
-    get_proc_count();
-    setInterval(get_proc_count, 1000);
+    //get_proc_count();
+    //setInterval(get_proc_count, 1000);
 });

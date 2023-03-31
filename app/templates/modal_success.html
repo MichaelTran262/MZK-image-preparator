@@ -1,0 +1,36 @@
+{% extends 'index.html' %}
+
+{% block modal %}
+<div id="msg_modal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div id={{ folder }} class="modal-header text-center">
+          <h5 class="modal-title">{{ msg|safe }}</h5>
+          <p id="content"></p>
+        </div>
+        <div class="modal-footer text-center">
+            <a href={{ return_path }} class="btn btn-primary">Zpět</a>
+        </div>
+      </div>
+    </div>
+</div>
+<script>
+    function get_progress() {
+        console.log("Modal success: " + window.location.pathname)
+        path = window.location.pathname;
+    
+        fetch(path)
+            .then(res => res.json())
+            .then(data => {
+                console.log(data)
+                $('#content').html("Konvertováno: " + data.converted + "/" + data.total_files)
+            });
+    }
+   
+    $(document).ready(function(){
+        $("#msg_modal").modal("show");
+        get_progress();
+        setInterval(get_progress, 1000);
+    })
+</script>
+{% endblock %}
