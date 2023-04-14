@@ -20,7 +20,7 @@ class ProductionConfig(Config):
     DB_NAME = '' #Production ready
 
 class DevelopmentConfig(Config):
-    SRC_FOLDER = os.environ.get('SRC_FOLDER') or 'testFolder'
+    SRC_FOLDER = os.environ.get('SRC_FOLDER') or '/home/tran/Desktop/git/github/MichaelTran262/image-preparator/testFolder'
     DST_FOLDER = os.environ.get('DST_FOLDER') or '' # ADD MZK
 
     DB_USER = 'postgres'

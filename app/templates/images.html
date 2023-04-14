@@ -1,0 +1,60 @@
+{% extends 'base_table.html' %}
+
+{% block body %}
+<div class="row p-3">
+  <div class="container pt-3">
+    <h2>Záznamy procesů</h2>      
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>imageID</th>
+          <th>Jméno</th>
+          <th>Složka</th>
+          <th>Čas</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for image in images.items %}
+            <tr>
+                <td>{{ image.imageId }}</td>
+                <td>{{ image.filename }}</td>
+                <td class="border-left">{{ image.folder.folderName }}</td>
+                <td>{{ image.time_created }}</td>
+            </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="text-right">
+      <a href="{{ url_for('main.get_images', page=images.prev_num) }}" class="btn btn-outline-dark {% if images.page == 1 %}disabled{% endif %}">
+          &laquo;
+      </a>
+      <!-- Loop through the number of pages to display a link for each-->
+      {% for page_num in images.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                
+      {% if page_num %}
+       <!-- Check for the active page and set the link to "Active"-->
+              {% if images.page == page_num %}
+              <a href="{{ url_for('main.get_images', page=page_num) }}"
+              class="btn btn-dark">
+                  {{ page_num }}
+              </a>
+              {% else %}
+              <a href="{{ url_for('main.get_images', page=page_num) }}"
+              class="btn btn-outline-dark">
+                  {{ page_num }}
+              </a>
+              {% endif %}
+          {% else %}
+              ...
+          {% endif %}
+      {% endfor %}    
+      <a href="{{ url_for('main.get_images', page=images.next_num) }}" class="btn btn-outline-dark {% if images.page == images.pages %}disabled{% endif %}">
+          &raquo;
+      </a>
+    </div>
+    <p class="text-right mt-3">
+        Stránka {{ images.page }} z {{ images.pages }}
+    </p>
+  </div>
+</div>
+{% endblock %}

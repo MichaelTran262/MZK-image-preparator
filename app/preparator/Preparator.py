@@ -2,7 +2,11 @@ import os
 import pyvips
 import multiprocessing
 from flask import Flask, request, render_template, url_for, abort, send_file, redirect, request, jsonify
+from .. import models
+from .. import db
+from .. import app
 import time
+from datetime import datetime
 import urllib.parse
 
 class Preparator:
@@ -91,11 +95,14 @@ class Preparator:
         task_cp.join(1)
         return ''
 
-    def convert_image(file, dirs, src_dir):
+    def convert_image(file, dirs, src_dir, folderId):
         ##app.logger.info(f'Preparing file {file}')
         filename = os.path.splitext(file)[0]
         # get absolute path
         file = os.path.join(src_dir, file)
+        new_image = models.Image(filename=filename, folderId=folderId)
+        db.session.add(new_image)
+        db.session.commit()
         image = pyvips.Image.new_from_file(file)
         image3 = image.thumbnail_image(1920)
         image4 = image.thumbnail_image(800)
@@ -108,8 +115,12 @@ class Preparator:
     def copy_images(src_dir, dirs, app):
         tif_files = os.listdir(src_dir)
         start = time.perf_counter()
+        folder = models.FolderDb(folderName=src_dir, folderPath=src_dir)
+        db.session.add(folder)
+        db.session.commit()
         pool = multiprocessing.Pool(processes=multiprocessing.cpu_count()-8)
-        pool.starmap(Preparator.convert_image, [(file, dirs, src_dir) for file in tif_files if file.endswith('.tif') or file.endswith('.tiff')])
+        pool.starmap(Preparator.convert_image, 
+            [(file, dirs, src_dir, folder.folderId) for file in tif_files if file.endswith('.tif') or file.endswith('.tiff')])
         pool.close()
         pool.join()
         finish = time.perf_counter()

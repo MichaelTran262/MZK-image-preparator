@@ -6,6 +6,7 @@ import urllib.parse
 from . import main
 from ..preparator.Preparator import Preparator
 from ..dataMover.ProcessWrapper import ProcessWrapper
+from ..preparator.ImageWrapper import ImageWrapper
 #from .. import db
 
 #dataSender = ProcessWrapper(db)
@@ -76,6 +77,14 @@ def get_processes():
     if procs is None:
         abort(404)
     return render_template('processes.html', processes=procs)
+
+@main.route('/images', methods=['GET'])
+def get_images():
+    page = request.args.get('page', 1, type=int)
+    images = ImageWrapper.get_images_by_page(page)
+    if images is None:
+        abort(404)
+    return render_template('images.html', images=images)
 
 @main.route('/active-processes', methods=['GET'])
 def get_active_processes():

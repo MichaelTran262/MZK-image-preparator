@@ -1,0 +1,30 @@
+version: '3'
+services:
+  app:
+    image: krom-app
+    container_name: krom-app
+    ports:
+      - "5000:5000"
+    volumes:
+#      - ./:/image-preparator
+      - ./testFolder:/mnt/testFolder
+      - ./logs:/logs
+    command: "flask run"
+    environment:
+      - FLASK_APP=flask_app.py
+      - FLASK_DEBUG=1
+    depends_on:
+      - postgres
+    restart: always
+  postgres:
+    image: postgres:15
+    container_name: db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=baseddata
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+
