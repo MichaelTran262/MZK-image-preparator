@@ -54,6 +54,14 @@ class FolderDb(db.Model):
             processId={self.processId!r},  \
             folderName={self.folderName!r},\
             folderPath={self.folderPath!r}"
+    
+    @classmethod
+    def create(cls, folderName, folderPath):
+        folder = cls(folderName=folderName, folderPath=folderPath)
+        db.session.add(folder)
+        db.session.commit()
+        db.session.close()
+        return folder
 
 class Image(db.Model):
 
@@ -63,4 +71,13 @@ class Image(db.Model):
     folderId = db.Column(db.Integer, db.ForeignKey('folder.folderId'), nullable=False)
     filename = db.Column(db.String, nullable=False)
     time_created = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    status = db.Column(db.String, nullable=False)
     #folder = db.relationship('FolderDb', backref='image')
+
+    @classmethod
+    def create(cls, filename, folderId, status):
+        print(filename, folderId, status)
+        image = cls(filename=filename, folderId=folderId, status=status)
+        db.session.add(image)
+        db.session.commit()
+        db.session.close()
