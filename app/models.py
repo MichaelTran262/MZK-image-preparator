@@ -2,56 +2,64 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from . import db
 
+folder_process = db.Table('folder_process',
+                          db.Column("folder_id", db.Integer, db.ForeignKey('folder.id')),
+                          db.Column("process_id", db.Integer, db.ForeignKey('process.id'))
+                          )
+
 class ProcessDb(db.Model):
+
+    #query: db.Query
 
     __tablename__ = 'process'
 
-    processId = db.Column(db.Integer, primary_key=True)
-    globalId = db.Column(db.String(40), nullable=False)
-    folderId = db.Column(db.Integer, db.ForeignKey('folder.folderId'), nullable=False)
-    pid = db.Column(db.Integer, nullable=True)
-    scheduledFor = db.Column(db.DateTime, nullable=True)
-    start = db.Column(db.DateTime, nullable=True)
-    stop = db.Column(db.DateTime, nullable=True)
-    forceful = db.Column(db.Boolean, nullable=True)
-    processStatus = db.Column(db.Integer, nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
+    #globalId = db.Column(db.String(40), nullable=True)
+    created = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    scheduledFor = db.Column(db.DateTime, default=None, nullable=True)
+    start = db.Column(db.DateTime, default=None, nullable=True)
+    stop = db.Column(db.DateTime, default=None, nullable=True)
+    #forceful = db.Column(db.Boolean, nullable=True)
+    processStatus = db.Column(db.String, nullable=False)
+    folders = db.relationship('FolderDb', secondary=folder_process, backref='processes')
 
-    __table_args__ = (db.UniqueConstraint('pid', 'stop', name='pid_stop_constaint'),)
+    #__table_args__ = (db.UniqueConstraint('pid', 'stop', name='pid_stop_constaint'),)
 
     def __repr__(self):
         return f"Book(                          \
-            globalId={self.globalId!r},         \
-            pid={self.pid!r},                   \
-            start={self.start!r},               \
-            stop={self.stop!r}                  \
-            scheduledFor={self.scheduledFor!r}  \
-            processStatus={self.processStatus!r}\
-            forcefull={self.forceful!r})"
+            start={self.start},               \
+            stop={self.stop}                  \
+            scheduledFor={self.scheduledFor}  \
+            processStatus={self.processStatus!r}"
     
+    @classmethod
+    def create(cls, folderName, folderPath, message):
+        #db.session.close()
+        return None
+
     def serialize(self):
         return {
-            'globalId' : self.globalId,
-            'pid' : self.pid,
             'start' : self.start,
             'stop' : self.stop,
             'scheduledFor' : self.scheduledFor,
-            'processStatus' : self.processStatus,
-            'forcefull' : self.forceful
+            'processStatus' : self.processStatus
         }
 
 class FolderDb(db.Model):
+
+    #query: db.Query
     
     __tablename__ = 'folder'
 
-    folderId = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     folderName = db.Column(db.String, nullable=False)
     folderPath = db.Column(db.String, nullable=False)
-    processes = db.relationship('ProcessDb', backref='folder')
+    #processes = db.relationship('ProcessDb', secondary=folder_process, backref='folders')
     images = db.relationship('Image', backref='folder')
 
     def __repr__(self):
-        return f"Book(                     \
-            processId={self.processId!r},  \
+        return f"Folder(                     \
+            id={self.id!r},  \
             folderName={self.folderName!r},\
             folderPath={self.folderPath!r}"
     
@@ -59,16 +67,18 @@ class FolderDb(db.Model):
     def create(cls, folderName, folderPath):
         folder = cls(folderName=folderName, folderPath=folderPath)
         db.session.add(folder)
-        db.session.commit()
-        db.session.close()
+        db.session.flush()
+        db.session.refresh(folder)
         return folder
 
 class Image(db.Model):
 
+    #query: db.Query
+
     __tablename__ = 'image'
 
-    imageId = db.Column(db.Integer, primary_key=True)
-    folderId = db.Column(db.Integer, db.ForeignKey('folder.folderId'), nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
+    folder_id = db.Column(db.Integer, db.ForeignKey('folder.id'), nullable=False)
     filename = db.Column(db.String, nullable=False)
     time_created = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     status = db.Column(db.String, nullable=False)
@@ -76,8 +86,8 @@ class Image(db.Model):
 
     @classmethod
     def create(cls, filename, folderId, status):
-        print(filename, folderId, status)
-        image = cls(filename=filename, folderId=folderId, status=status)
+        image = cls(filename=filename, folder_id=folderId, status=status)
         db.session.add(image)
-        db.session.commit()
-        db.session.close()
+        db.session.flush()
+        db.session.refresh(image)
+        return image

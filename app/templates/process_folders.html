@@ -1,0 +1,27 @@
+{% extends 'base_table.html' %}
+
+{% block body %}
+<div class="row p-3">
+  <div class="container pt-3">
+    <h2>Složky patřící přenosu {{ process }}</h2>      
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Jméno složky</th>
+          <th>cesta</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for folder in folders %}
+            <tr>
+                <td>{{ folder.id }}</th>
+                <td class="border-left">{{ folder.folderName }}</td>
+                <td>{{ folder.folderPath }}</td>
+            </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

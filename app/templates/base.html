@@ -13,6 +13,7 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <title>MZK aplikace</title>
     {% block head %}{% endblock %}
 </head>
 <body>
@@ -28,9 +29,6 @@
             <li class="nav-item active">
               <a class="nav-link" href="/processes">Procesy<span class="sr-only">(current)</span></a>
             </li>
-            <li class="nav-item">
-              <a class="nav-link" href="/images">Obrázky</a>
-            </li>
         </div>
       </nav>
     <div class="container pt-5">
@@ -41,7 +39,7 @@
                     <ul>
                         <li>Napravo je seznam dostupných složek pro přípravu obrázků</li>
                         <li>Tato aplikce <b>POUZE vytváří</b> složky <b>2</b> a <b>3</b> a jejich příslušné obrázky, nic se nemaže ani nepřepisuje, pokud neexistují 2 a 3.</li>
-                        <li>Po kliknutí na akci 'Připravit' vytvoří program obrázky pro danout složku, pokud:</li>
+                        <li>Po kliknutí na akci 'Připravit složky 3 a 4' vytvoří program obrázky pro danout složku, pokud:</li>
                         <ol>
                             <li>Existuje uvnitř složka <b>2</b></li>
                             <li>Neexistují složky <b>3</b> a <b>4</b></li>
@@ -55,5 +53,6 @@
             </div>
         </div>
     </div>
+    
 </body>
 </html>

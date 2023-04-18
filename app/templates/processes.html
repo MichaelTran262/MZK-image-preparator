@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base_table.html' %}
 
 {% block body %}
 <div class="row p-3">
@@ -7,19 +7,26 @@
     <table class="table table-bordered">
       <thead>
         <tr>
-          <th>globalID</th>
-          <th>PID</th>
+          <th>ID</th>
+          <th>Čas vytvoření</th>
           <th>Plánovaný čas odeslání</th>
           <th>Status</th>
+          <th>Složky</th>
         </tr>
       </thead>
       <tbody>
         {% for process in processes.items %}
             <tr>
-                <td>{{ process.globalId }}</th>
-                <td>{{ process.pid }}</th>
-                <td class="border-left">{{ process.scheduledFor.strftime('%d.%m.%Y, %H:%M') }}</td>
+                <td>{{ process.id }}</th>
+                <td>{{ process.created }}</td>
+                <td class="border-left">
+                {% if process.scheduledFor %}
+                  {{ process.scheduledFor.strftime('%d.%m.%Y, %H:%M') }}
+                {% else %} 
+                  Žádný
+                {% endif %}</td>
                 <td>{{ process.processStatus }}</th>
+                <td><a class="btn btn-primary" role="button" href="{{ url_for('main.get_process_folders', id=process.id) }}">Zobrazit</button></td>
             </tr>
         {% endfor %}
       </tbody>

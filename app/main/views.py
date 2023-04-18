@@ -1,12 +1,13 @@
-from flask import Flask, render_template, abort, request, jsonify
+from flask import Flask, render_template, abort, request, jsonify, redirect, url_for
 from flask import current_app as app
 import multiprocessing
 import os
 import urllib.parse
 from . import main
 from ..preparator.Preparator import Preparator
-from ..dataMover.ProcessWrapper import ProcessWrapper
 from ..preparator.ImageWrapper import ImageWrapper
+from ..dataMover.ProcessWrapper import ProcessWrapper
+from ..dataMover.ProcessMover import ProcessMover
 #from .. import db
 
 #dataSender = ProcessWrapper(db)
@@ -14,6 +15,7 @@ from ..preparator.ImageWrapper import ImageWrapper
 
 @main.route('/', defaults={'req_path': ''})
 @main.route('/home', defaults={'req_path': ''})
+@main.route('/home/', defaults={'req_path': ''})
 @main.route('/<path:req_path>')
 @main.route('/home/<path:req_path>')
 def index(req_path):
@@ -72,7 +74,6 @@ def is_running():
 @main.route('/processes', methods=['GET'])
 def get_processes():
     page = request.args.get('page', 1, type=int)
-    print(page)
     procs = ProcessWrapper.get_processes_by_page(page)
     if procs is None:
         abort(404)
@@ -117,8 +118,9 @@ def remove_folder():
     #dataSender.removeFolder(request.args["folder"])
     return jsonify({"status": "ok"})
 
-@main.route('/send_to_mzk', methods=['POST'])
-def schedule_send():
+@main.route('/send_to_mzk_now/home/<path:req_path>', methods=['POST'])
+@main.route('/send_to_mzk_now/<path:req_path>', methods=['POST'])
+def send_folder(req_path):
     #global dataSender
     #if "time" in request.args.keys():
     #    dataSender.setSendTime(request.args["time"])
@@ -128,7 +130,39 @@ def schedule_send():
     #globalId = dataSender.getGlobalId()
     #activeSenders[globalId] = dataSender
     #dataSender = ProcessWrapper()
-    return '', 200
+    abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
+    message = ProcessMover.move_to_mzk_now(abs_path)
+    files = Preparator.get_folders(abs_path, req_path)
+    file_count = Preparator.get_file_count(abs_path, req_path)
+    head, tail = os.path.split(req_path)
+    return_path = urllib.parse.quote("/home/" + str(head))
+    if message != '':
+        return render_template('modal.html', 
+            msg=message, 
+            files=files, 
+            file_count=file_count, 
+            return_path=return_path)
+    else:
+        return redirect(url_for('main.get_processes'))
+
+@main.route('/send_to_mzk_later/home/<path:req_path>', methods=['POST'])
+@main.route('/send_to_mzk_later/<path:req_path>', methods=['POST'])
+def schedule_send_folder(req_path):
+    abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
+    message = ProcessMover.move_to_mzk_later(abs_path)
+    files = Preparator.get_folders(abs_path, req_path)
+    file_count = Preparator.get_file_count(abs_path, req_path)
+    head, tail = os.path.split(req_path)
+    return_path = urllib.parse.quote("/home/" + str(head))
+    if message != '':
+        return render_template('modal.html', 
+            msg=message, 
+            files=files, 
+            file_count=file_count, 
+            return_path=return_path)
+    else:
+        return redirect(url_for('main.get_processes'))
+    
     
 @main.route('/cancel_send', methods=['POST'])
 def cancel_send():
@@ -139,10 +173,12 @@ def cancel_send():
     #activeSenders.pop(request.args["globalId"])
     return '', 200
 
-#@main.route('/get_sender_processes', methods=['GET'])
-#def get_sender_processes():
-    #ProcessWrapper.get_processes_by_page(1);
-#    return jsonify([sender.getJson() for sender in activeSenders.values()])
+@main.route('/get_process_folders/<int:id>', methods=['GET'])
+def get_process_folders(id):
+    print("HELLO")
+    folders = ProcessMover.get_folders(id);
+    print(folders)
+    return render_template("process_folders.html", folders=folders)
 
 #End of endpoints
 

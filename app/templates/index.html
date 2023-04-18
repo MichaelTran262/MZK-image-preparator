@@ -26,21 +26,41 @@
             
         </tbody>
     </table>
+    <div id="transferModal" class="modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <form id="transferForm" action="" method="post" onsubmit="return confirm('Opravdu chcete poslat tuto složku?');">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="path">Cesta</label>
+                        <input type="text" id="pathForm" name="path" class="form-control" readonly>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Zavřít</button>
+                        <button id="transferNowButton" type="submit" form="transferForm" class="btn btn-primary">Poslat do MZK IHNED</button>
+                        <button id="transferLaterButton" type="submit" form="transferForm" class="btn btn-danger">Poslat do MZK o půlnoci</button>
+                </div>
+            </form>
+          </div>
+        </div>
+    </div>
     <script> 
         function fill_table(tbody){
             let myjson = {{ files|tojson|safe }};
             console.log(myjson)
             tbody.empty();
             for(let i = 0; i < myjson.length; i++){
-                href_path = window.location.pathname + '/' + myjson[i].dirname
-                console.log(href_path)
+                pathname = window.location.pathname + '/' + myjson[i].dirname
+                pathname = pathname.replace(/([^:]\/)\/+/g, "$1");
+                console.log(pathname)
                 let row = "";
                 row += '<tr>';
-                row += '<td><i class="fa fa-folder-open"></i><a href="' + href_path + '">' + myjson[i].dirname+ '</a></td>';
+                row += '<td><i class="fa fa-folder-open"></i><a href="' + pathname + '">' + myjson[i].dirname+ '</a></td>';
                 row += '<td class="actions"><form action="/prepare/' + myjson[i].dirpath + '" method="post"> \
-                                                <input type="submit" class="btn btn-primary" value="Připravit"</td>';
-                row += '<td class="actions"> \
-                    <button type="button" class="btn btn-primary add-button" >Přidat složku</button></td>';
+                                                <input type="submit" class="btn btn-primary" value="Připravit složky 3 a 4"></form></td>';
+                row += '<td class="actions"><button type="button" class="btn btn-primary modal-button" data-toggle="modal" \
+                    data-target="#transferModal" data-path="'+ myjson[i].dirpath +'" data-action1="/send_to_mzk_now" data-action2="/send_to_mzk_later">Poslat do MZK</button></td>';
                 row += '</tr>';
                 tbody.append(row);
             }
@@ -50,16 +70,27 @@
         $(document).ready(function() {
             let tbody = $('#tableContent');
             fill_table(tbody)
-            $('.add-button').on('click', function() {
-                //if($(this).val() == 'Smazat složku')
-                //   $(this).val('Přidat složku');
-                //else{
-                //    $(this).val('Smazat složku');
-                //    }});
-                path = "/add_folder" + window.location.pathname + "/" + $(this).closest('tr').find('a').text();
-                console.log(path)
-                $.post(path, function(data, status){
-                    alert("Data: " + data + "\nStatus: " + status);
+            $('#transferModal').on('show.bs.modal', function(event) {
+                var button = $(event.relatedTarget);
+                var path = button.data('path');
+                var modal = $(this);
+                modal.find('#path').val(path);
+                modal.find('#myForm').attr('action', '/' + '');
+            });
+            $('#dirTable').on('click', '.modal-button', function() {
+                path = window.location.pathname + '/' + $(this).closest('tr').find('a').text();
+                path = path.replace(/([^:]\/)\/+/g, "$1");
+                var action1 = $(this).data('action1') + path;
+                var action2 = $(this).data('action2') + path;
+                $('#transferForm').attr('action', action1); // Set the default action to action1
+                $('#pathForm').val(path);
+                console.log(path, action1, action2)
+                $('#transferNowButton').on('click', function() {
+                    $('#transferForm').attr('action', action1);
+                });
+
+                $('#transferLaterButton').on('click', function() {
+                    $('#transferForm').attr('action', action2);
                 });
             });
         });

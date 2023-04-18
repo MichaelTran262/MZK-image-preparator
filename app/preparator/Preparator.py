@@ -67,19 +67,18 @@ class Preparator:
         }
         if str(abs_path).endswith('/1'):
             return "Nelze vytvořit obrázky ve složce s názvem <b>1</b>. \
-                Pro přípravu obrázků v této složce klikněte na 'Připravit' v <b>PŘEDCHOZÍ SLOŽCE</b> složky <b>1</b>", 
+                Pro přípravu obrázků v této složce klikněte na 'Připravit složky 3 a 4' v <b>PŘEDCHOZÍ SLOŽCE</b> složky <b>1</b>", 
         elif str(abs_path).endswith('/2'):
             return "Nelze vytvořit obrázky ve složce s názvem <b>2</b>. \
-                Pro přípravu obrázků v této složceu klikněte na 'Připravit' v <b>PŘEDCHOZÍ SLOŽCE</b> složky <b>2</b>"
+                Pro přípravu obrázků v této složce klikněte na 'Připravit složky 3 a 4' v <b>PŘEDCHOZÍ SLOŽCE</b> složky <b>2</b>"
         elif str(abs_path).endswith('/3'):
             return"Nelze vytvořit obrázky ve složce s názvem <b>3</b>. \
-                Pro přípravu obrázků v této složce klikněte na 'Připravit' v <b>PŘEDCHOZÍ SLOŽCE</b> složky <b>3</b>"
+                Pro přípravu obrázků v této složce klikněte na 'Připravit složky 3 a 4' v <b>PŘEDCHOZÍ SLOŽCE</b> složky <b>3</b>"
         elif str(abs_path).endswith('/4'):
             return "Nelze vytvořit obrázky ve složce s názvem <b>4</b>. \
-                Pro přípravu obrázků v této složce klikněte na 'Připravit' ve <b>PŘEDCHOZÍ SLOŽCE</b> složky <b>4</b>"
+                Pro přípravu obrázků v této složce klikněte na 'Připravit složky 3 a 4' ve <b>PŘEDCHOZÍ SLOŽCE</b> složky <b>4</b>"
 
-        if len(multiprocessing.active_children()) > 2:
-            files = os.listdir(base_dir)  
+        if len(multiprocessing.active_children()) > 2: 
             return "Už běží dva jiné procesy!"
         for dir in dirs:
             if dir == 2:
@@ -87,7 +86,6 @@ class Preparator:
                     return "Chybí složka 2"
             elif dir == 3 or dir == 4:
                 if os.path.exists(dirs[dir]):
-                    files = os.listdir(base_dir)
                     return "Složka 3 nebo 4 už existuje"
                 else:
                     os.makedirs(dirs[dir])
@@ -105,7 +103,6 @@ class Preparator:
             image = pyvips.Image.new_from_file(file)
             image3 = image.thumbnail_image(1920)
             image4 = image.thumbnail_image(800)
-            #print("HELLO")
             # get only name of file without extension
             filename = os.path.splitext(filename)[0]
             jpeg_filename = filename + ".jpeg"
@@ -113,10 +110,10 @@ class Preparator:
             image3.jpegsave(image3_path)
             image4_path = dirs[4] + '/' + jpeg_filename
             image4.jpegsave(image4_path)
-            models.Image.create(filename=jpeg_filename, folderId=folderId, status="ok")
+            #models.Image.create(filename=jpeg_filename, folderId=folderId, status="ok")
         except Exception as e:
             print(e)
-            models.Image.create(filename=jpeg_filename, folderId=folderId, status=e)
+            #models.Image.create(filename=jpeg_filename, folderId=folderId, status=e)
 
     @classmethod
     def copy_images(cls, src_dir, krom_dirs, app):
@@ -129,7 +126,7 @@ class Preparator:
             for filename in files:
                 if filename.endswith(".tiff") or filename.endwith(".tif"):
                     tiff_file = os.path.join(src_dir, filename)
-                    pool.apply_async(cls.convert_image, args=(tiff_file, krom_dirs, src_dir, folder.folderId))
+                    pool.apply_async(cls.convert_image, args=(tiff_file, krom_dirs, src_dir, folder.id))
         #pool.starmap(Preparator.convert_image, 
             #[(file, dirs, src_dir, folder.folderId) for file in tif_files if file.endswith('.tif') or file.endswith('.tiff')])
         pool.close()

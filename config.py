@@ -4,7 +4,7 @@ import configparser
 PROJECT_DIR = os.path.abspath(os.path.dirname(__file__))
 
 class Config(object):
-    MZK_IP = os.environ.get('MZK_IP', '193.113.155.223:XXXX')
+    MZK_IP = os.environ.get('MZK_IP', 'X.X.X.X:XXXX')
     TESTING = False
     DB_SERVER = 'postgres'
     
@@ -25,5 +25,4 @@ class DevelopmentConfig(Config):
 
     DB_USER = 'postgres'
     DB_PASSWORD = 'password'
-    DB_SERVER = 'localhost:5432'
     DB_NAME = 'baseddata'
