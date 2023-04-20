@@ -1,6 +1,7 @@
 from flask import Flask, render_template, abort, request, jsonify, redirect, url_for
 from flask import current_app as app
 import multiprocessing
+import threading
 import os
 import urllib.parse
 from . import main
@@ -8,6 +9,7 @@ from ..preparator.Preparator import Preparator
 from ..preparator.ImageWrapper import ImageWrapper
 from ..dataMover.ProcessWrapper import ProcessWrapper
 from ..dataMover.ProcessMover import ProcessMover
+from ..models import ProcessDb, FolderDb
 #from .. import db
 
 #dataSender = ProcessWrapper(db)
@@ -121,29 +123,11 @@ def remove_folder():
 @main.route('/send_to_mzk_now/home/<path:req_path>', methods=['POST'])
 @main.route('/send_to_mzk_now/<path:req_path>', methods=['POST'])
 def send_folder(req_path):
-    #global dataSender
-    #if "time" in request.args.keys():
-    #    dataSender.setSendTime(request.args["time"])
-    #else:
-    #    dataSender.setSendTime()
-    #dataSender.scheduleSend()
-    #globalId = dataSender.getGlobalId()
-    #activeSenders[globalId] = dataSender
-    #dataSender = ProcessWrapper()
     abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
-    message = ProcessMover.move_to_mzk_now(abs_path)
-    files = Preparator.get_folders(abs_path, req_path)
-    file_count = Preparator.get_file_count(abs_path, req_path)
-    head, tail = os.path.split(req_path)
-    return_path = urllib.parse.quote("/home/" + str(head))
-    if message != '':
-        return render_template('modal.html', 
-            msg=message, 
-            files=files, 
-            file_count=file_count, 
-            return_path=return_path)
-    else:
-        return redirect(url_for('main.get_processes'))
+    t = threading.Thread(target=create_process_and_run, args=(abs_path, app.config['SMB_USER'], app.config['SMB_PASSWORD'], app._get_current_object()))
+    t.daemon = True
+    t.start()
+    return redirect(url_for('main.get_processes'))
 
 @main.route('/send_to_mzk_later/home/<path:req_path>', methods=['POST'])
 @main.route('/send_to_mzk_later/<path:req_path>', methods=['POST'])
@@ -166,18 +150,11 @@ def schedule_send_folder(req_path):
     
 @main.route('/cancel_send', methods=['POST'])
 def cancel_send():
-    #global activeSenders
-    #global dataSender
-    #chosenSender = activeSenders[request.args["globalId"]]
-    #chosenSender.killProcess()
-    #activeSenders.pop(request.args["globalId"])
     return '', 200
 
 @main.route('/get_process_folders/<int:id>', methods=['GET'])
 def get_process_folders(id):
-    print("HELLO")
-    folders = ProcessMover.get_folders(id);
-    print(folders)
+    folders = ProcessDb.get_folders(id);
     return render_template("process_folders.html", folders=folders)
 
 #End of endpoints
@@ -185,3 +162,7 @@ def get_process_folders(id):
 def check_dir(path):
     if not os.path.exists(path):
         os.makedirs(path)
+
+def create_process_and_run(src_path, username, password, app):
+    mover = ProcessMover(src_path, username, password)
+    mover.move_to_mzk_now(app)

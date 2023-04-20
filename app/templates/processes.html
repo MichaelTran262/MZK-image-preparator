@@ -16,7 +16,7 @@
       </thead>
       <tbody>
         {% for process in processes.items %}
-            <tr>
+            <tr id="row-{{ process.id }}">
                 <td>{{ process.id }}</th>
                 <td>{{ process.created }}</td>
                 <td class="border-left">
@@ -64,4 +64,18 @@
     </p>
   </div>
 </div>
+<script>
+  var socket = io.connect();
+
+  // listen for progress updates
+  socket.on('progress', function(data) {
+    // get the row ID for this transfer process
+    console.log(data)
+    var rowId = 'row-' + data.process_id;
+    console.log(rowId)
+    // update the progress bar for this row
+    //var progressBar = document.querySelector('#' + rowId + ' progress');
+    //progressBar.value = data.progress;
+  });
+</script>
 {% endblock %}

@@ -1,4 +1,4 @@
-from flask_sqlalchemy import SQLAlchemy
+from flask import current_app, url_for
 from datetime import datetime
 from . import db
 
@@ -31,19 +31,27 @@ class ProcessDb(db.Model):
             stop={self.stop}                  \
             scheduledFor={self.scheduledFor}  \
             processStatus={self.processStatus!r}"
-    
-    @classmethod
-    def create(cls, folderName, folderPath, message):
-        #db.session.close()
-        return None
 
-    def serialize(self):
+    def to_json(self):
         return {
+            'id': self.id,
+            'created': self.created,
+            'scheduled_for': self.scheduledFor,
             'start' : self.start,
             'stop' : self.stop,
             'scheduledFor' : self.scheduledFor,
-            'processStatus' : self.processStatus
+            'processStatus' : self.processStatus,
+            'folders': url_for('api.get_process_folders', id=self.id)
         }
+
+    @staticmethod
+    def get_folders(id):
+        process = ProcessDb.query.get(id)
+        return list(process.folders)
+
+    @staticmethod
+    def get_sender_processes_by_page(page, process_id):
+        pass
 
 class FolderDb(db.Model):
 

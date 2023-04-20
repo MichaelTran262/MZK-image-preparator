@@ -162,7 +162,7 @@ class ProcessWrapper():
     
     @classmethod
     def get_processes_by_page(self, page = 1):
-        procs = models.ProcessDb.query.paginate(page=page, per_page=10)
+        procs = models.ProcessDb.query.order_by(models.ProcessDb.created.desc()).paginate(page=page, per_page=10)
         return procs
 
     @classmethod
