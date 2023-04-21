@@ -1,18 +1,23 @@
 version: '3'
 services:
   app:
-    image: krom-app
-    container_name: krom-app
+    image: michaeltran262/mzk-preparator-app:1.1.2
+    container_name: mzk-preparator-app
     ports:
       - "5000:5000"
     volumes:
 #      - ./:/image-preparator
       - ./testFolder:/mnt/testFolder
       - ./logs:/logs
-    command: "flask run"
+    command: "flask run --host=0.0.0.0"
+    #command: "gunicorn -b 0.0.0.0:5000 --chdir /preparator -w 2 --log-level debug flask_app:app"
     environment:
       - FLASK_APP=flask_app.py
       - FLASK_DEBUG=1
+      - SRC_FOLDER=/mnt/testFolder
+      - DST_FOLDER=/mnt/testFolder
+      - SMB_USER=${SMB_USER}
+      - SMB_PASSWORD=${SMB_PASSWORD}
     depends_on:
       - postgres
     restart: always

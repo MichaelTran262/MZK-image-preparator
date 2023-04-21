@@ -27,21 +27,33 @@
         </tbody>
     </table>
     <div id="transferModal" class="modal" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
+        <div class="modal-dialog modal-lg" role="document">
           <div class="modal-content">
-            <form id="transferForm" action="" method="post" onsubmit="return confirm('Opravdu chcete poslat tuto složku?');">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="path">Cesta</label>
-                        <input type="text" id="pathForm" name="path" class="form-control" readonly>
+                <div id="modalBody"class="modal-body">
+                    <div class="progress" style="height: 32px;">
+                        <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" style="display:block"></div>
                     </div>
+                    <div id="progressNumbered"></div>
+                    <p id="transferInfo" style="display:None">Přenos proběhne i po zavření okna</p>
                 </div>
                 <div class="modal-footer">
                         <button type="button" class="btn btn-default" data-dismiss="modal">Zavřít</button>
-                        <button id="transferNowButton" type="submit" form="transferForm" class="btn btn-primary">Poslat do MZK IHNED</button>
-                        <button id="transferLaterButton" type="submit" form="transferForm" class="btn btn-danger">Poslat do MZK o půlnoci</button>
+                        <button id="transferNowButton" class="btn btn-primary">Poslat IHNED</button>
+                        <button id="transferLaterButton" class="btn btn-danger" disabled>Poslat o půlnoci</button>
                 </div>
-            </form>
+          </div>
+        </div>
+    </div>
+    <!-- Modal -->
+    <div id="modalInfo" class="modal fade" id="myModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 id="modalMessage" class="modal-title"></h5>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Zavřít</button>
+            </div>
           </div>
         </div>
     </div>
@@ -59,8 +71,7 @@
                 row += '<td><i class="fa fa-folder-open"></i><a href="' + pathname + '">' + myjson[i].dirname+ '</a></td>';
                 row += '<td class="actions"><form action="/prepare/' + myjson[i].dirpath + '" method="post"> \
                                                 <input type="submit" class="btn btn-primary" value="Připravit složky 3 a 4"></form></td>';
-                row += '<td class="actions"><button type="button" class="btn btn-primary modal-button" data-toggle="modal" \
-                    data-target="#transferModal" data-path="'+ myjson[i].dirpath +'" data-action1="/send_to_mzk_now" data-action2="/send_to_mzk_later">Poslat do MZK</button></td>';
+                row += '<td class="actions"><button type="button" class="showModalButton btn btn-primary modal-button">Poslat do MZK</button></td>';
                 row += '</tr>';
                 tbody.append(row);
             }
@@ -70,27 +81,75 @@
         $(document).ready(function() {
             let tbody = $('#tableContent');
             fill_table(tbody)
-            $('#transferModal').on('show.bs.modal', function(event) {
-                var button = $(event.relatedTarget);
-                var path = button.data('path');
-                var modal = $(this);
-                modal.find('#path').val(path);
-                modal.find('#myForm').attr('action', '/' + '');
+            $('.showModalButton').on('click', function() {
+                path = window.location.pathname + '/' + $(this).closest('tr').find('a').text();
+                url = '/api/check_folder_conditions' + path;
+                url = url.replace(/([^:]\/)\/+/g, "$1");
+                $.ajax({
+                    type: 'GET',
+                    async: false,
+                    url: url,
+                    dataType: 'json',
+                    success: function(data) {
+                        if (!data.folder_two) {
+                            $('#modalMessage').text('Chybí Složka 2!');
+                            $('#modalInfo').modal('show');
+                            return;
+                        }
+                        
+                        if (data.exists_at_mzk) {
+                            // Handle missing results case
+                            $('#modalMessage').text('Složka již je v MZK!');
+                            $('#modalInfo').modal('show');
+                            return;
+                        }
+                        console.log("it is ok");
+                        $('#transferModal').modal('show');
+                    },
+                    error: function(data) {
+                        console.log("WTF");
+                    }
+                });
             });
+            $('#transferModal').on('hidden.bs.modal', function () {
+                $("#transferInfo").remove()
+                $('#transferNowButton').show();
+                $('#transferLaterButton').show();
+                $("#progressBar").css("width", "0%");
+                $("#progressNumbered").html("");
+            })
             $('#dirTable').on('click', '.modal-button', function() {
                 path = window.location.pathname + '/' + $(this).closest('tr').find('a').text();
+                // remove trailing slashes
                 path = path.replace(/([^:]\/)\/+/g, "$1");
-                var action1 = $(this).data('action1') + path;
-                var action2 = $(this).data('action2') + path;
-                $('#transferForm').attr('action', action1); // Set the default action to action1
-                $('#pathForm').val(path);
-                console.log(path, action1, action2)
-                $('#transferNowButton').on('click', function() {
-                    $('#transferForm').attr('action', action1);
+                // listen for progress updates
+                var socket = io.connect();
+                socket.on('progress', function(data) {
+                    // get the row ID for this transfer process
+                    let percent = Math.floor((data.current/data.total)*100);
+                    let width_style = percent.toString() + "%";
+                    console.log(width_style)
+                    let label = data.current + "/" + data.total;
+                    $("#progressBar").css("width", width_style);
+                    $("#progressNumbered").html(label);
                 });
-
+                $('#folderPath').val(path);
+                $('#transferNowButton').on('click', function() {
+                    url = "/api/send_to_mzk_now/" + path
+                    url = url.replace(/([^:]\/)\/+/g, "$1");
+                    $.ajax({
+                        type: "POST",
+                        url: url,
+                        dataType: "json",
+                        success: function(result){
+                            $('#transferNowButton').hide();
+                            $('#transferLaterButton').hide();
+                            $("#modalBody").append('<p id="transferInfo">Přenos proběhne i po zavření okna</p>');
+                        }
+                    });
+                });
                 $('#transferLaterButton').on('click', function() {
-                    $('#transferForm').attr('action', action2);
+                    console.log("Nothing")
                 });
             });
         });

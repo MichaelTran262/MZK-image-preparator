@@ -13,13 +13,13 @@ class Config(object):
         return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_SERVER}/{self.DB_NAME}"
     
 class ProductionConfig(Config):
-    SRC_FOLDER = os.environ.get('SRC_FOLDER')
+    SRC_FOLDER = os.environ.get('SRC_FOLDER') or '/home/tran/Desktop/git/github/MichaelTran262/image-preparator/testFolder'
     DST_FOLDER = os.environ.get('DST_FOLDER') 
-    DB_USER = '' #Production ready
-    DB_PASSWORD = '' #Production ready
-    DB_NAME = '' #Production ready
-    SMB_PASSWORD = '' #Production ready
-    SMB_USER = '' #Production ready
+    DB_USER = 'postgres' #Production ready
+    DB_PASSWORD = 'password' #Production ready
+    DB_NAME = 'baseddata' #Production ready
+    SMB_PASSWORD = 'tran' #Production ready
+    SMB_USER = 'M9mepemjin' #Production ready
 
 class DevelopmentConfig(Config):
     SRC_FOLDER = os.environ.get('SRC_FOLDER') or '/home/tran/Desktop/git/github/MichaelTran262/image-preparator/testFolder'
