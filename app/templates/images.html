@@ -11,15 +11,17 @@
           <th>Jméno</th>
           <th>Složka</th>
           <th>Čas</th>
+          <th>status</th>
         </tr>
       </thead>
       <tbody>
         {% for image in images.items %}
             <tr>
-                <td>{{ image.imageId }}</td>
+                <td>{{ image.id }}</td>
                 <td>{{ image.filename }}</td>
                 <td class="border-left">{{ image.folder.folderName }}</td>
                 <td>{{ image.time_created }}</td>
+                <td>{{ image.status }}</td>
             </tr>
         {% endfor %}
       </tbody>

@@ -4,3 +4,4 @@ logs
 postgres-data
 .vscode
 .git
+nginx

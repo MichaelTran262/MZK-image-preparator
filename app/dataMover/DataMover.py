@@ -1,6 +1,5 @@
 from .. import db, socketIo
 from flask import current_app
-from flask_socketio import SocketIO
 from ..models import FolderDb, ProcessDb
 import os
 import multiprocessing
@@ -10,7 +9,7 @@ from datetime import datetime, time
 from apscheduler.schedulers.background import BackgroundScheduler
 from smb.SMBConnection import SMBConnection
 
-class ProcessMover():
+class DataMover():
 
     nf_path = '/MUO/test_tran/'
 
@@ -29,7 +28,7 @@ class ProcessMover():
 
     # sends only one path
     def move_to_mzk_now(self, app):
-        conds = ProcessMover.check_conditions(self.src_path, 
+        conds = DataMover.check_conditions(self.src_path, 
             self.foldername, self.username, self.password)
         if not conds['folder_two']:
             return
@@ -45,11 +44,13 @@ class ProcessMover():
 
     @staticmethod
     def check_conditions(src_path, foldername, username, password):
-        mzk_path = ProcessMover.nf_path + foldername
+        mzk_path = DataMover.nf_path + foldername
         return_dict = {}
         krom_dir2_path = src_path + '/2'
         if not os.path.exists(krom_dir2_path):
             return_dict['folder_two'] = False
+            return_dict['exists_at_mzk'] = False
+            return return_dict
         else:
             return_dict['folder_two'] = True
         try:  
@@ -58,13 +59,17 @@ class ProcessMover():
             print('SMBConnection creation unsuccessfull: ', e)
             return return_dict
         try:
-            conn.connect('10.2.0.8')
+            conn.connect('10.2.0.8', timeout=10)
             print('Connection successfull')
         except Exception as e:
             print("Connection unsuccessfull")
             return return_dict
         # Create connection, listPath
-        files = conn.listPath('NF', ProcessMover.nf_path)
+        try:
+            files = conn.listPath('NF', DataMover.nf_path)
+        except Exception as e:
+            print("Could not list files")
+            raise(e)
         return_dict['exists_at_mzk'] = False
         for file in files:
             if file.isDirectory:
@@ -109,8 +114,9 @@ class ProcessMover():
                 for path, subdirs, files in os.walk(folder.folderPath + '/2'):
                     for name in files:
                         file = os.path.join(path, name)
-                        with open(file, 'rb') as local_f:
-                            conn.storeFile('NF', '/MUO/test_tran/' + folder.folderName + '/' + name, local_f)
+                        #with open(file, 'rb') as local_f:
+                        #    conn.storeFile('NF', '/MUO/test_tran/' + folder.folderName + '/' + name, local_f)
+                        t.sleep(1)
                         done_files += 1
                         socketIo.emit('progress', {'process_id': process.id, 'current': done_files, 'total': self.total_files})
             conn.close()

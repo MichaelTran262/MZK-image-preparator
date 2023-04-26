@@ -1,5 +1,6 @@
 from flask import Flask, render_template, abort, request, jsonify, redirect, url_for
 from flask import current_app as app
+from .. import socketIo
 import multiprocessing
 import threading
 import os
@@ -8,7 +9,7 @@ from . import main
 from ..preparator.Preparator import Preparator
 from ..preparator.ImageWrapper import ImageWrapper
 from ..dataMover.ProcessWrapper import ProcessWrapper
-from ..dataMover.ProcessMover import ProcessMover
+from ..dataMover.DataMover import DataMover
 from ..models import ProcessDb, FolderDb
 #from .. import db
 
@@ -18,13 +19,12 @@ from ..models import ProcessDb, FolderDb
 @main.route('/', defaults={'req_path': ''})
 @main.route('/home', defaults={'req_path': ''})
 @main.route('/home/', defaults={'req_path': ''})
-@main.route('/<path:req_path>')
 @main.route('/home/<path:req_path>')
 def index(req_path):
     abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
 
     if not os.path.exists(abs_path):
-        app.logger.error("BASE_DIR does not exist")
+        app.logger.error("abs path: " + abs_path + " does not exist")
         return abort(404)
 
     if req_path != '':
@@ -36,9 +36,9 @@ def index(req_path):
     else:
         prev_path = ''
 
-    dirs = Preparator.get_folders(abs_path, req_path)
+    files = Preparator.get_folders(abs_path, req_path)
     file_count = Preparator.get_file_count(abs_path, req_path)
-    return render_template('index.html', files=dirs, file_count=file_count, prev_page='/home'+prev_path)
+    return render_template('index.html', files=files, file_count=file_count, prev_page='/home'+prev_path)
 
 @main.route('/prepare/<path:req_path>', methods=['POST', 'GET'])
 def prepare(req_path):
@@ -81,13 +81,25 @@ def get_processes():
         abort(404)
     return render_template('processes.html', processes=procs)
 
+@main.route('/get_process_folders/<int:id>', methods=['GET'])
+def get_process_folders(id):
+    proc = ProcessDb.query.get(id)
+    folders = ProcessDb.get_folders(id)
+    return render_template("process_folders.html", process=proc.id, folders=folders)
+
+@main.route('/folder_images/<int:id>', methods=['GET'])
+def get_folder_images(id):
+    folder = FolderDb.query.get(id)
+    images = FolderDb.get_images(id)
+    return render_template("folder_images.html", folder=folder.folderName, images=images)
+
 @main.route('/images', methods=['GET'])
 def get_images():
     page = request.args.get('page', 1, type=int)
     images = ImageWrapper.get_images_by_page(page)
     if images is None:
         abort(404)
-    return render_template('images.html', images=images)
+    return render_template('images.html',images=images)
 
 @main.route('/active-processes', methods=['GET'])
 def get_active_processes():
@@ -133,7 +145,7 @@ def send_folder(req_path):
 @main.route('/send_to_mzk_later/<path:req_path>', methods=['POST'])
 def schedule_send_folder(req_path):
     abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
-    message = ProcessMover.move_to_mzk_later(abs_path)
+    message = DataMover.move_to_mzk_later(abs_path)
     files = Preparator.get_folders(abs_path, req_path)
     file_count = Preparator.get_file_count(abs_path, req_path)
     head, tail = os.path.split(req_path)
@@ -152,11 +164,6 @@ def schedule_send_folder(req_path):
 def cancel_send():
     return '', 200
 
-@main.route('/get_process_folders/<int:id>', methods=['GET'])
-def get_process_folders(id):
-    folders = ProcessDb.get_folders(id);
-    return render_template("process_folders.html", folders=folders)
-
 #End of endpoints
 
 def check_dir(path):
@@ -164,5 +171,9 @@ def check_dir(path):
         os.makedirs(path)
 
 def create_process_and_run(src_path, username, password, app):
-    mover = ProcessMover(src_path, username, password)
+    mover = DataMover(src_path, username, password)
     mover.move_to_mzk_now(app)
+
+@socketIo.on('event')
+def handle_event():
+    print("SOCKET CONNECTED")

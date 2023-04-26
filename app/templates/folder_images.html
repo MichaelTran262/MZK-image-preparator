@@ -1,0 +1,27 @@
+{% extends 'base_table.html' %}
+
+{% block body %}
+<div class="row p-3">
+  <div class="container pt-3">
+    <h2>Obrázky ve složce {{ folder }}</h2>      
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Jméno Obrázku</th>
+          <th>Cesta</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for image in images %}
+            <tr>
+                <td>{{ image.id }}</th>
+                <td class="border-left">{{ image.filename }}</td>
+                <td>{{ image.rel_path }}</td>
+            </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

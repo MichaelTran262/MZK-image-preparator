@@ -1,3 +1,5 @@
+socket = io.connect()
+
 $( document ).ready(function() {
     $('#myInput').keyup(function() {
         let filter = $('#myInput').val()

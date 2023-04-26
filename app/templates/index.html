@@ -4,7 +4,7 @@
 {% endblock %}
 
 {% block body %}
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/init.js') }}"></script>
     <input type="text" id="myInput" placeholder="Hledat složku...">
     <div class="row">
         <div class="col">
@@ -23,13 +23,36 @@
             </tr>
         </thead>
         <tbody id="tableContent">
-            
+            {% for file in files %}
+                <tr>
+                    <td><a href="/home/{{ file.dirpath }}"><i class="fa fa-folder-open"></i>{{ file.dirname }}</a></td>
+                    <td class="actions"><button type="button" class="prepare-button btn btn-primary">Připravit složky 3 a 4</button></td>
+                    <td class="actions"><button type="button" class="transfer-button btn btn-primary">Poslat do MZK</button></td>
+                </tr>
+            {% endfor %}
+            <tr><td>Počet obrázků ve složce: {{ file_count }}</td></tr>
         </tbody>
     </table>
+    <div id="prepareModal" class="modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+          <div class="modal-content">
+                <div id="preparationModalBody"class="modal-body">
+                    <div class="progress" style="height: 32px;">
+                        <div id="preparationProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" style="display:block"></div>
+                    </div>
+                    <div id="preparationProgressNumbered"></div>
+                    <p id="preparationTransferInfo" style="display:None">Příprava proběhne i po zavření tohoto okna</p>
+                </div>
+                <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Zavřít</button>
+                </div>
+          </div>
+        </div>
+    </div>
     <div id="transferModal" class="modal" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-lg" role="document">
           <div class="modal-content">
-                <div id="modalBody"class="modal-body">
+                <div id="transferModalBody"class="modal-body">
                     <div class="progress" style="height: 32px;">
                         <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" style="display:block"></div>
                     </div>
@@ -57,103 +80,7 @@
           </div>
         </div>
     </div>
-    <script> 
-        function fill_table(tbody){
-            let myjson = {{ files|tojson|safe }};
-            console.log(myjson)
-            tbody.empty();
-            for(let i = 0; i < myjson.length; i++){
-                pathname = window.location.pathname + '/' + myjson[i].dirname
-                pathname = pathname.replace(/([^:]\/)\/+/g, "$1");
-                console.log(pathname)
-                let row = "";
-                row += '<tr>';
-                row += '<td><i class="fa fa-folder-open"></i><a href="' + pathname + '">' + myjson[i].dirname+ '</a></td>';
-                row += '<td class="actions"><form action="/prepare/' + myjson[i].dirpath + '" method="post"> \
-                                                <input type="submit" class="btn btn-primary" value="Připravit složky 3 a 4"></form></td>';
-                row += '<td class="actions"><button type="button" class="showModalButton btn btn-primary modal-button">Poslat do MZK</button></td>';
-                row += '</tr>';
-                tbody.append(row);
-            }
-            row = '<tr><td>Počet obrázků ve složce: ' + {{ file_count }} + '</td></tr>';
-            tbody.append(row);
-        }
-        $(document).ready(function() {
-            let tbody = $('#tableContent');
-            fill_table(tbody)
-            $('.showModalButton').on('click', function() {
-                path = window.location.pathname + '/' + $(this).closest('tr').find('a').text();
-                url = '/api/check_folder_conditions' + path;
-                url = url.replace(/([^:]\/)\/+/g, "$1");
-                $.ajax({
-                    type: 'GET',
-                    async: false,
-                    url: url,
-                    dataType: 'json',
-                    success: function(data) {
-                        if (!data.folder_two) {
-                            $('#modalMessage').text('Chybí Složka 2!');
-                            $('#modalInfo').modal('show');
-                            return;
-                        }
-                        
-                        if (data.exists_at_mzk) {
-                            // Handle missing results case
-                            $('#modalMessage').text('Složka již je v MZK!');
-                            $('#modalInfo').modal('show');
-                            return;
-                        }
-                        console.log("it is ok");
-                        $('#transferModal').modal('show');
-                    },
-                    error: function(data) {
-                        console.log("WTF");
-                    }
-                });
-            });
-            $('#transferModal').on('hidden.bs.modal', function () {
-                $("#transferInfo").remove()
-                $('#transferNowButton').show();
-                $('#transferLaterButton').show();
-                $("#progressBar").css("width", "0%");
-                $("#progressNumbered").html("");
-            })
-            $('#dirTable').on('click', '.modal-button', function() {
-                path = window.location.pathname + '/' + $(this).closest('tr').find('a').text();
-                // remove trailing slashes
-                path = path.replace(/([^:]\/)\/+/g, "$1");
-                // listen for progress updates
-                var socket = io.connect();
-                socket.on('progress', function(data) {
-                    // get the row ID for this transfer process
-                    let percent = Math.floor((data.current/data.total)*100);
-                    let width_style = percent.toString() + "%";
-                    console.log(width_style)
-                    let label = data.current + "/" + data.total;
-                    $("#progressBar").css("width", width_style);
-                    $("#progressNumbered").html(label);
-                });
-                $('#folderPath').val(path);
-                $('#transferNowButton').on('click', function() {
-                    url = "/api/send_to_mzk_now/" + path
-                    url = url.replace(/([^:]\/)\/+/g, "$1");
-                    $.ajax({
-                        type: "POST",
-                        url: url,
-                        dataType: "json",
-                        success: function(result){
-                            $('#transferNowButton').hide();
-                            $('#transferLaterButton').hide();
-                            $("#modalBody").append('<p id="transferInfo">Přenos proběhne i po zavření okna</p>');
-                        }
-                    });
-                });
-                $('#transferLaterButton').on('click', function() {
-                    console.log("Nothing")
-                });
-            });
-        });
-        
-    </script>
+    <script src="{{url_for('static', filename='js/prepare.js')}}"></script>
+    <script src="{{url_for('static', filename='js/transfer.js')}}"></script>
 {% block modal %}{% endblock %}
 {% endblock %}

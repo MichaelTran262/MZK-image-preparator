@@ -79,6 +79,11 @@ class FolderDb(db.Model):
         db.session.refresh(folder)
         return folder
 
+    @staticmethod
+    def get_images(id):
+        folder = FolderDb.query.get(id)
+        return list(folder.images)
+
 class Image(db.Model):
 
     #query: db.Query
@@ -88,14 +93,14 @@ class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     folder_id = db.Column(db.Integer, db.ForeignKey('folder.id'), nullable=False)
     filename = db.Column(db.String, nullable=False)
+    rel_path = db.Column(db.String, nullable=True)
     time_created = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    status = db.Column(db.String, nullable=False)
+    status = db.Column(db.Text, nullable=False)
     #folder = db.relationship('FolderDb', backref='image')
 
     @classmethod
     def create(cls, filename, folderId, status):
         image = cls(filename=filename, folder_id=folderId, status=status)
         db.session.add(image)
-        db.session.flush()
-        db.session.refresh(image)
+        db.session.commit()
         return image
