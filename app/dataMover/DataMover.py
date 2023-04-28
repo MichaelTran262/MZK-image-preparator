@@ -114,9 +114,9 @@ class DataMover():
                 for path, subdirs, files in os.walk(folder.folderPath + '/2'):
                     for name in files:
                         file = os.path.join(path, name)
-                        #with open(file, 'rb') as local_f:
-                        #    conn.storeFile('NF', '/MUO/test_tran/' + folder.folderName + '/' + name, local_f)
-                        t.sleep(1)
+                        with open(file, 'rb') as local_f:
+                            conn.storeFile('NF', '/MUO/test_tran/' + folder.folderName + '/' + name, local_f)
+                        #t.sleep(1)
                         done_files += 1
                         socketIo.emit('progress', {'process_id': process.id, 'current': done_files, 'total': self.total_files})
             conn.close()
