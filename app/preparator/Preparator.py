@@ -5,7 +5,6 @@ import multiprocessing
 import threading
 from flask import Flask, request, render_template, url_for, abort, send_file, redirect, request, jsonify
 from .. import models
-from .. import app
 import time as t
 from datetime import datetime
 import urllib.parse
