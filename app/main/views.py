@@ -6,7 +6,7 @@ import threading
 import os
 import urllib.parse
 from . import main
-from ..preparator.Preparator import Preparator
+from ..preparator.Preparator import get_folders, get_file_count, prepare_folder, progress
 from ..preparator.ImageWrapper import ImageWrapper
 from ..dataMover.ProcessWrapper import ProcessWrapper
 from ..dataMover.DataMover import DataMover
@@ -36,17 +36,17 @@ def index(req_path):
     else:
         prev_path = ''
 
-    files = Preparator.get_folders(abs_path, req_path)
-    file_count = Preparator.get_file_count(abs_path, req_path)
+    files = get_folders(abs_path, req_path)
+    file_count = get_file_count(abs_path, req_path)
     return render_template('index.html', files=files, file_count=file_count, prev_page='/home'+prev_path)
 
 @main.route('/prepare/<path:req_path>', methods=['POST', 'GET'])
 def prepare(req_path):
     if request.method == 'POST':
-        message = Preparator.prepare_folder(app.config['SRC_FOLDER'], app, req_path)
+        message = prepare_folder(app.config['SRC_FOLDER'], app, req_path)
         abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
-        files = Preparator.get_folders(abs_path, req_path)
-        file_count = Preparator.get_file_count(abs_path, req_path)
+        files = get_folders(abs_path, req_path)
+        file_count = get_file_count(abs_path, req_path)
         head, tail = os.path.split(req_path)
         return_path = urllib.parse.quote("/home/" + str(head))
         if message != '':
@@ -62,7 +62,7 @@ def prepare(req_path):
                 file_count=file_count,
                 return_path=return_path)
     elif request.method == 'GET':
-        converted_file_count, total_files = Preparator.progress(req_path, app)
+        converted_file_count, total_files = progress(req_path, app)
         return jsonify({'converted': converted_file_count, 'total_files': total_files})
     else:
         return '', 204
@@ -146,8 +146,8 @@ def send_folder(req_path):
 def schedule_send_folder(req_path):
     abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
     message = DataMover.move_to_mzk_later(abs_path)
-    files = Preparator.get_folders(abs_path, req_path)
-    file_count = Preparator.get_file_count(abs_path, req_path)
+    files = get_folders(abs_path, req_path)
+    file_count = get_file_count(abs_path, req_path)
     head, tail = os.path.split(req_path)
     return_path = urllib.parse.quote("/home/" + str(head))
     if message != '':

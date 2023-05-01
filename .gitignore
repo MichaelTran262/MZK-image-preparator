@@ -5,7 +5,7 @@ postgres-data
 __pycache__/
 app/dataMover/__pycache__
 .DS_Store
-testFolder
+data
 .idea
 .vscode
 nginx

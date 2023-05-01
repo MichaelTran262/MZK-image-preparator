@@ -2,22 +2,17 @@ $(document).ready(function() {
     $('.prepare-button').on('click', function() {
         path = window.location.pathname + '/' + $(this).closest('tr').find('a').text();
         url = '/api/prepare/check_folder_condition' + path;
+        url = url.replace(/([^:]\/)\/+/g, "$1");
         prepare_url = '/api/prepare/prepare_folder' + path;
-        socket.on('preparation', function(data) {
-            // get the row ID for this transfer process
-            let percent = Math.floor((data.current/data.total)*100);
-            let width_style = percent.toString() + "%";
-            let label = data.current + "/" + data.total;
-            $("#preparationProgressBar").css("width", width_style);
-            $("#preparationProgressNumbered").html(label);
-        });
+        prepare_url = prepare_url.replace(/([^:]\/)\/+/g, "$1");
+        progress_url = '/api/prepare/progress' + path;
+        progress_url = progress_url.replace(/([^:]\/)\/+/g, "$1");
         $.ajax({
             type: 'GET',
             async: false,
             url: url,
             dataType: 'json',
             success: function(data) {
-                console.log(data);
                 if (!data.folder_two) {
                     $('#modalMessage').text('Chybí Složka s názvem 2!');
                     $('#modalInfo').modal('show');
@@ -38,7 +33,6 @@ $(document).ready(function() {
                     $('#modalInfo').modal('show');
                     return;
                 }
-                console.log("Folder contains folder 2");
                 $('#prepareModal').modal('show');
                 $.ajax({
                     type: 'POST',
@@ -56,5 +50,31 @@ $(document).ready(function() {
                 console.log("WTF");
             }
         });
+        update_progress(progress_url);
     });
 });
+
+function update_progress(url) {
+
+    progressIntId = setInterval(function() {
+        $.ajax({
+            type: 'GET',
+            url: url,
+            dataType: 'json',
+            success: function(data) {
+                if (data.current == data.total) {
+                    clearInterval(progressIntId);
+                }
+                let percent = Math.floor((data.current/data.total)*100);
+                let width_style = percent.toString() + "%";
+                let label = data.current + "/" + data.total;
+                $("#preparationProgressBar").css("width", width_style);
+                $("#preparationProgressNumbered").html(label);
+            },
+            error: function(data) {
+                console.log("get_progress failed");
+            }
+        });
+    }, 1000);
+}
+// get the row ID for this transfer process

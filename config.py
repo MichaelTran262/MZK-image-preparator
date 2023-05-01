@@ -9,6 +9,7 @@ class Config(object):
     MZK_IP = os.environ.get('MZK_IP', 'X.X.X.X:XXXX')
     TESTING = False
     DB_SERVER = 'mzk-postgres'
+    DB_NAME = 'mzkdata' #Production ready
     
     @property
     def SQLALCHEMY_DATABASE_URI(self):
@@ -19,12 +20,11 @@ class ProductionConfig(Config):
     DST_FOLDER = os.environ.get('DST_FOLDER') 
     DB_USER = 'postgres' #Production ready
     DB_PASSWORD = 'password' #Production ready
-    DB_NAME = 'mzkdata' #Production ready
     SMB_USER = os.environ.get('SMB_USER') #Production ready
     SMB_PASSWORD = os.environ.get('SMB_PASSWORD') #Production ready
 
 class DevelopmentConfig(Config):
-    SRC_FOLDER = os.environ.get('SRC_FOLDER') or '/home/tran/Desktop/git/github/MichaelTran262/image-preparator/testFolder'
+    SRC_FOLDER = os.environ.get('SRC_FOLDER') or ''
     DST_FOLDER = os.environ.get('DST_FOLDER') or '' # ADD MZK
 
     SMB_USER = os.environ.get('SMB_USER')
@@ -34,4 +34,12 @@ class DevelopmentConfig(Config):
 
 class LocalDevelopmentConfig(DevelopmentConfig):
     DB_SERVER = 'localhost:5432'
+    SRC_FOLDER = '/home/thanh/Desktop/git/github/MichaelTran262/MZK-image-preparator/data'
+    DST_FOLDER = ''
+
+    CELERY = dict(
+        broker_url="redis://localhost:6379/0",
+        result_backend="redis://localhost:6379/0",
+        worker_concurrency=4
+    )
 
