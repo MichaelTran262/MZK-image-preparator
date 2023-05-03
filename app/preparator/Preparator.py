@@ -116,7 +116,7 @@ def prepare_folder(base_dir, app, req_path):
 
 def copy_images(src_dir, krom_dirs):
     #tif_files = os.listdir(src_dir)
-    #folder = models.FolderDb.create(folderName=src_dir, folderPath=src_dir)
+    folder = models.FolderDb.create(folderName=src_dir, folderPath=src_dir)
     total_files = 0
     for root, dirs, files in os.walk(src_dir):
         total_files += len([file for file in files if file.endswith(".tiff") or file.endswith(".tif")])
@@ -135,7 +135,7 @@ def copy_images(src_dir, krom_dirs):
                 rel_dir = os.path.relpath(root, src_dir)
                 rel_file = os.path.join(rel_dir, filename)
                 try:
-                    convert_image.delay(rel_file, krom_dirs[3], krom_dirs[4], src_file)
+                    convert_image.delay(rel_file, krom_dirs[3], krom_dirs[4], src_file, folder.id)
                 except Exception as e:
                     print(e)
                     return
@@ -160,23 +160,25 @@ def progress(req_path, app):
     return converted, total_files
 
 @shared_task(ignore_results=False)
-def convert_image(rel_file, dir3, dir4, src_file):
+def convert_image(rel_file, dir3, dir4, src_file, folderId):
     from pyvips import Image
     ##app.logger.info(f'Preparing file {file}')
     #get filename with extension
-    filename = os.path.basename(rel_file)
-    #print("Converting: ", rel_file)
-    image = Image.new_from_file(src_file)
-    image3 = Image.thumbnail(src_file, 1920)
-    image4 = Image.thumbnail(src_file, 800)
-    # get only name of file without extension
-    filename = os.path.splitext(rel_file)[0]
-    jpeg_filename = filename + ".jpeg"
-    #image3_path = dirs[3] + '/' + jpeg_filename
-    image3_path = os.path.join(dir3, jpeg_filename)
-    image3.jpegsave(image3_path)
-    #image4_path = dirs[4] + '/' + jpeg_filename
-    image4_path = os.path.join(dir4, jpeg_filename)
-    image4.jpegsave(image4_path)
-    #models.Image.create(filename=jpeg_filename, folderId=folderId, status="ok")
-    #models.Image.create(filename=jpeg_filename, folderId=folderId, status=e)
+    try:
+        filename = os.path.basename(rel_file)
+        #print("Converting: ", rel_file)
+        image = Image.new_from_file(src_file)
+        image3 = Image.thumbnail(src_file, 1920)
+        image4 = Image.thumbnail(src_file, 800)
+        # get only name of file without extension
+        filename = os.path.splitext(rel_file)[0]
+        jpeg_filename = filename + ".jpeg"
+        #image3_path = dirs[3] + '/' + jpeg_filename
+        image3_path = os.path.join(dir3, jpeg_filename)
+        image3.jpegsave(image3_path)
+        #image4_path = dirs[4] + '/' + jpeg_filename
+        image4_path = os.path.join(dir4, jpeg_filename)
+        image4.jpegsave(image4_path)
+        models.Image.create(filename=jpeg_filename, folderId=folderId, status="ok")
+    except Exception as e:
+        models.Image.create(filename=jpeg_filename, folderId=folderId, status="Error")

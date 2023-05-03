@@ -75,8 +75,7 @@ class FolderDb(db.Model):
     def create(cls, folderName, folderPath):
         folder = cls(folderName=folderName, folderPath=folderPath)
         db.session.add(folder)
-        db.session.flush()
-        db.session.refresh(folder)
+        db.session.commit()
         return folder
 
     @staticmethod

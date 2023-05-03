@@ -20,7 +20,6 @@ def prepare_check_folder_conditions(req_path):
 def prepare_prepare_folder(req_path):
     abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
     msg = prepare_folder(app.config['SRC_FOLDER'], app, req_path)
-    print(msg)
     return jsonify({"Status":"ok"}), 200
 
 @api.route('/prepare/progress/home/<path:req_path>', methods=['GET'])
