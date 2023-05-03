@@ -34,12 +34,12 @@ class DevelopmentConfig(Config):
 
 class LocalDevelopmentConfig(DevelopmentConfig):
     DB_SERVER = 'localhost:5432'
-    SRC_FOLDER = '/home/thanh/Desktop/git/github/MichaelTran262/MZK-image-preparator/data'
+    SRC_FOLDER = '/home/tran/Desktop/git/github/MichaelTran262/image-preparator/data'
     DST_FOLDER = ''
 
     CELERY = dict(
-        broker_url="redis://localhost:6379/0",
-        result_backend="redis://localhost:6379/0",
-        worker_concurrency=4
+        broker_url= "redis://localhost:6379/0",
+        result_backend= f"db+postgresql://{DevelopmentConfig.DB_USER}:{DevelopmentConfig.DB_PASSWORD}@{DB_SERVER}/mzkdata",
+        worker_concurrency= 4
     )
 
