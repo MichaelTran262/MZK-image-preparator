@@ -16,17 +16,17 @@ class ProcessDb(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     #globalId = db.Column(db.String(40), nullable=True)
     created = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    celery_task_id = db.Column(db.String, nullable=False)
     scheduledFor = db.Column(db.DateTime, default=None, nullable=True)
     start = db.Column(db.DateTime, default=None, nullable=True)
     stop = db.Column(db.DateTime, default=None, nullable=True)
     #forceful = db.Column(db.Boolean, nullable=True)
-    processStatus = db.Column(db.String, nullable=False)
     folders = db.relationship('FolderDb', secondary=folder_process, backref='processes')
 
     #__table_args__ = (db.UniqueConstraint('pid', 'stop', name='pid_stop_constaint'),)
 
     def __repr__(self):
-        return f"Book(                          \
+        return f"Process(                          \
             start={self.start},               \
             stop={self.stop}                  \
             scheduledFor={self.scheduledFor}  \
@@ -91,6 +91,7 @@ class Image(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     folder_id = db.Column(db.Integer, db.ForeignKey('folder.id'), nullable=False)
+    celery_task_id = db.Column(db.String, nullable=False)
     filename = db.Column(db.String, nullable=False)
     rel_path = db.Column(db.String, nullable=True)
     time_created = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
@@ -98,8 +99,8 @@ class Image(db.Model):
     #folder = db.relationship('FolderDb', backref='image')
 
     @classmethod
-    def create(cls, filename, folderId, status):
-        image = cls(filename=filename, folder_id=folderId, status=status)
+    def create(cls, filename, folderId, status, celery_task_id):
+        image = cls(filename=filename, folder_id=folderId, status=status, celery_task_id=celery_task_id)
         db.session.add(image)
         db.session.commit()
         return image

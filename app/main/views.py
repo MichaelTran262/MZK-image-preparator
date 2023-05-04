@@ -173,7 +173,3 @@ def check_dir(path):
 def create_process_and_run(src_path, username, password, app):
     mover = DataMover(src_path, username, password)
     mover.move_to_mzk_now(app)
-
-@socketIo.on('event')
-def handle_event():
-    print("SOCKET CONNECTED")

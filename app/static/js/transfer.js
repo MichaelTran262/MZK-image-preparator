@@ -3,17 +3,10 @@ $(document).ready(function() {
         path = window.location.pathname + '/' + $(this).closest('tr').find('a').text();
         url = '/api/check_folder_conditions' + path;
         url = url.replace(/([^:]\/)\/+/g, "$1");
-        var socket = io.connect();
-        socket.on('progress', function(data) {
-            console.log("Socket listening on progress");
-            // get the row ID for this transfer process
-            let percent = Math.floor((data.current/data.total)*100);
-            let width_style = percent.toString() + "%";
-            console.log(width_style)
-            let label = data.current + "/" + data.total;
-            $("#progressBar").css("width", width_style);
-            $("#progressNumbered").html(label);
-        });
+        send_url = '/api/send_to_mzk_now/' + path;
+        send_url = send_url.replace(/([^:]\/)\/+/g, "$1");
+        progress_url = '/api/send_to_mzk_now/progress' + path;
+        progress_url = progress_url.replace(/([^:]\/)\/+/g, "$1");
         $.ajax({
             type: 'GET',
             async: false,
@@ -28,43 +21,62 @@ $(document).ready(function() {
                 
                 if (data.exists_at_mzk) {
                     // Handle missing results case
-                    $('#modalMessage').text('Složka již je v MZK!');
+                    $('#modalMessage').text('Složka s daným názvem se již nachází v MZK!');
                     $('#modalInfo').modal('show');
                     return;
                 }
-                console.log("it is ok");
                 $('#transferModal').modal('show');
                 $('#transferNowButton').on('click', function() {
-                url = "/api/send_to_mzk_now/" + path
-                url = url.replace(/([^:]\/)\/+/g, "$1");
-                $.ajax({
-                    type: "POST",
-                    url: url,
-                    dataType: "json",
-                    success: function(result){
-                        $('#transferNowButton').hide();
-                        $('#transferLaterButton').hide();
-                        $("#modalBody").append('<p id="transferInfo">Přenos proběhne i po zavření okna</p>');
-                    }
+                    console.log('hello');
+                    $.ajax({
+                        type: "POST",
+                        url: send_url,
+                        dataType: "json",
+                        success: function(result){
+                            console.log(result);
+                            update_transfer_progress(progress_url);
+                            $('#transferNowButton').hide();
+                            $('#transferLaterButton').hide();
+                        }
+                    });
                 });
-            });
             },
             error: function(data) {
                 console.log("WTF");
             }
         });
     });
+
     $('#transferModal').on('hidden.bs.modal', function () {
-        $("#transferInfo").remove()
         $('#transferNowButton').show();
         $('#transferLaterButton').show();
-        $("#progressBar").css("width", "0%");
-        $("#progressNumbered").html("");
-    })
-    $('#dirTable').on('click', '.transfer-button', function() {
-        path = window.location.pathname + '/' + $(this).closest('tr').find('a').text();
-        // remove trailing slashes
-        path = path.replace(/([^:]\/)\/+/g, "$1");
-        // listen for progress updates
+        $("#transferProgressBar").css("width", "0%");
+        $("#transferProgressNumbered").html("");
     });
+
 });
+// Document ready end
+
+function update_transfer_progress(url) {
+    progressId = setInterval(function() {
+        $.ajax({
+            type: 'GET',
+            url: url,
+            dataType: 'json',
+            success: function(data) {
+                if (data.current == data.total) {
+                    console.log("current equals total")
+                    clearInterval(progressId);
+                }
+                let percent = Math.floor((data.current/data.total)*100);
+                let width_style = percent.toString() + "%";
+                let label = data.current + "/" + data.total;
+                $("#transferProgressBar").css("width", width_style);
+                $("#transferProgressNumbered").html(label)
+            },
+            error: function(data) {
+                console.log("update_transfer_progress failed");
+            }
+        });
+    }, 1000);
+}

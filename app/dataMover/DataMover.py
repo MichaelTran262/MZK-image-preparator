@@ -14,7 +14,7 @@ class DataMover():
 
     nf_path = '/MUO/test_tran/'
 
-    def __init__(self, src_path, user, password):
+    def __init__(self, src_path, user, password, celery_task_id):
         self.dirs = dirs = {
             2: src_path + '/2',
             3: src_path + '/3',
@@ -26,6 +26,7 @@ class DataMover():
         self.password = password
         self.total_files = 0
         self.total_directories = 0
+        self.celery_task_id = celery_task_id
 
     # sends only one path
     def move_to_mzk_now(self):
@@ -35,6 +36,7 @@ class DataMover():
             return
         if conds['exists_at_mzk']:
             return
+        print("HELLO")
         self.send_files()
 
     def move_to_mzk_later(self):
@@ -42,6 +44,49 @@ class DataMover():
             if dir == 2:
                 if not os.path.exists(self.dirs[dir]):
                     return "Chybí složka 2"
+                
+    @staticmethod
+    def get_folder_progress(folder, foldername, username, password):
+        mzk_path = os.path.join(DataMover.nf_path, foldername)
+        return_dict = {}
+        try:
+            conn = SMBConnection(username, password, 'krom_app', '10.2.0.8', use_ntlm_v2=True)
+        except Exception as e:
+            print('SMBConnection object creation unsuccessfull: ' + e)
+            return
+        try:
+            conn.connect('10.2.0.8', timeout=10)
+            print('Connection successfull')
+        except:
+            print('Connection unsuccessfull: ' + e)
+            return
+        total_files = 0
+        krom_dir2 = folder + '/2'
+        for path, subdirs, files in os.walk(krom_dir2):
+            total_files += len(files)
+        transferred = []
+        try:
+            for path, subdirs, files in DataMover.smb_walk(conn, mzk_path):
+                for name in files:
+                    transferred.append(os.path.join(path, name))
+        except Exception as e:
+            return 0, 1
+        return len(transferred), total_files
+
+    @staticmethod
+    def smb_walk(conn, path):
+        dirnames = []
+        filenames = []
+        for file in conn.listPath('NF', path):
+            if file.isDirectory:
+                if file.filename not in [u'.', u'..']:
+                    dirnames.append(file.filename)
+            else:
+                filenames.append(file.filename)
+        yield path, dirnames, filenames
+        for dirname in dirnames:
+            for subpath in DataMover.smb_walk(conn, os.path.join(path, dirname)):
+                yield subpath
 
     @staticmethod
     def check_conditions(src_path, foldername, username, password):
@@ -69,7 +114,7 @@ class DataMover():
         try:
             files = conn.listPath('NF', DataMover.nf_path)
         except Exception as e:
-            print("Could not list files")
+            print("Could not list files with listpath method")
             raise(e)
         return_dict['exists_at_mzk'] = False
         for file in files:
@@ -82,7 +127,7 @@ class DataMover():
         try:
             folder = FolderDb(folderName=os.path.split(self.src_path)[1], folderPath=self.src_path)
             db.session.add(folder)
-            process = ProcessDb(processStatus='Created')
+            process = ProcessDb(processStatus='Created', celery_task_id=self.celery_task_id)
             process.folders.append(folder)
             db.session.add(process)
             db.session.commit()
@@ -108,17 +153,16 @@ class DataMover():
                 self.total_files += len(files)
         done_directories = 0
         done_files = 0
-        local_socketio = SocketIO(logger=True, engineio_logger=True, message_queue='redis://localhost:6379')
         for folder in process.folders:
-            #conn.createDirectory('NF', '/MUO/test_tran/' + folder.folderName)
+            conn.createDirectory('NF', '/MUO/test_tran/' + folder.folderName)
             # send to MZK
             for path, subdirs, files in os.walk(folder.folderPath + '/2'):
                 for name in files:
                     file = os.path.join(path, name)
-                    #with open(file, 'rb') as local_f:
-                    #    conn.storeFile('NF', '/MUO/test_tran/' + folder.folderName + '/' + name, local_f)
-                    t.sleep(1)
-                    done_files += 1
-                    local_socketio.emit('progress', {'process_id': process.id, 'current': done_files, 'total': self.total_files})
+                    print("Storing file: /MUO/test_tran/" + folder.folderName + '/' + name)
+                    with open(file, 'rb') as local_f:
+                        conn.storeFile('NF', '/MUO/test_tran/' + folder.folderName + '/' + name, local_f)
+                    #t.sleep(1)
+                    #done_files += 1
         conn.close()
         # Change status to SENT

@@ -1,5 +1,6 @@
 from .. import db, socketIo
 from celery import shared_task
+from celery.result import AsyncResult
 import os
 import multiprocessing
 import threading
@@ -159,8 +160,8 @@ def progress(req_path, app):
         converted += len([file for file in files if file.endswith(".jpg") or file.endswith(".jpeg")])
     return converted, total_files
 
-@shared_task(ignore_results=False)
-def convert_image(rel_file, dir3, dir4, src_file, folderId):
+@shared_task(ignore_results=False, bind=True)
+def convert_image(self, rel_file, dir3, dir4, src_file, folderId):
     from pyvips import Image
     ##app.logger.info(f'Preparing file {file}')
     #get filename with extension
@@ -176,9 +177,11 @@ def convert_image(rel_file, dir3, dir4, src_file, folderId):
         #image3_path = dirs[3] + '/' + jpeg_filename
         image3_path = os.path.join(dir3, jpeg_filename)
         image3.jpegsave(image3_path)
+        os.chmod(image3_path, 0o0777)
         #image4_path = dirs[4] + '/' + jpeg_filename
         image4_path = os.path.join(dir4, jpeg_filename)
         image4.jpegsave(image4_path)
-        models.Image.create(filename=jpeg_filename, folderId=folderId, status="ok")
+        os.chmod(image4_path, 0o0777)
+        models.Image.create(filename=jpeg_filename, folderId=folderId, status="Ok", celery_task_id=self.request.id)
     except Exception as e:
-        models.Image.create(filename=jpeg_filename, folderId=folderId, status="Error")
+        models.Image.create(filename=jpeg_filename, folderId=folderId, status="error", celery_task_id=self.request.id)
