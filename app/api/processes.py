@@ -8,10 +8,12 @@ from . import api
 def get_processes():
     procs = ProcessDb.query.paginate()
 
+
 @api.route('/processes/<int:id>/')
 def get_process_api(id):
     proc = ProcessDb.query.get_or_404(id)
     return jsonify(proc.to_json())
+
 
 @api.route('/processes/folders/<int:id>/')
 def get_process_folders(id):

@@ -11,6 +11,7 @@ import time as t
 from datetime import datetime
 import urllib.parse
 
+
 def check_condition(src_path):
     return_dict = {}
     krom_dirs = {
@@ -39,6 +40,7 @@ def check_condition(src_path):
         return_dict['folder_four_empty'] = True
     return return_dict
 
+
 def get_folders(path, req_path):
     files = os.listdir(path)
     dirs = []
@@ -65,6 +67,7 @@ def get_folders(path, req_path):
             dirs.append(tmp)
     return dirs
 
+
 def get_file_count(path, req_path):
     content = os.listdir(path)
     files = []
@@ -82,6 +85,7 @@ def get_file_count(path, req_path):
                 tmp['isdir'] = False
                 files.append(tmp)
     return len(files)
+
 
 def prepare_folder(base_dir, app, req_path):
     abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
@@ -115,6 +119,7 @@ def prepare_folder(base_dir, app, req_path):
     copy_images(dirs[2], dirs)
     return ''
 
+
 def copy_images(src_dir, krom_dirs):
     #tif_files = os.listdir(src_dir)
     folder = models.FolderDb.create(folderName=src_dir, folderPath=src_dir)
@@ -142,6 +147,7 @@ def copy_images(src_dir, krom_dirs):
                     return
                 #pool.apply_async(cls.convert_image, args=(rel_file, krom_dirs, src_dir, src_file))
 
+
 def progress(req_path, app):
     abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
     dirs = {
@@ -160,25 +166,26 @@ def progress(req_path, app):
         converted += len([file for file in files if file.endswith(".jpg") or file.endswith(".jpeg")])
     return converted, total_files
 
+
 @shared_task(ignore_results=False, bind=True)
 def convert_image(self, rel_file, dir3, dir4, src_file, folderId):
     from pyvips import Image
-    ##app.logger.info(f'Preparing file {file}')
-    #get filename with extension
+    # app.logger.info(f'Preparing file {file}')
+    # get filename with extension
     try:
         filename = os.path.basename(rel_file)
-        #print("Converting: ", rel_file)
+        # print("Converting: ", rel_file)
         image = Image.new_from_file(src_file)
         image3 = Image.thumbnail(src_file, 1920)
         image4 = Image.thumbnail(src_file, 800)
         # get only name of file without extension
         filename = os.path.splitext(rel_file)[0]
         jpeg_filename = filename + ".jpeg"
-        #image3_path = dirs[3] + '/' + jpeg_filename
+        # image3_path = dirs[3] + '/' + jpeg_filename
         image3_path = os.path.join(dir3, jpeg_filename)
         image3.jpegsave(image3_path)
         os.chmod(image3_path, 0o0777)
-        #image4_path = dirs[4] + '/' + jpeg_filename
+        # image4_path = dirs[4] + '/' + jpeg_filename
         image4_path = os.path.join(dir4, jpeg_filename)
         image4.jpegsave(image4_path)
         os.chmod(image4_path, 0o0777)

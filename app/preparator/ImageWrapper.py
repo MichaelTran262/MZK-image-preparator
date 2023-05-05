@@ -1,6 +1,7 @@
 from .. import models
 
-class ImageWrapper():
+
+class ImageWrapper:
 
     @classmethod
     def get_images_by_page(self, page = 1):

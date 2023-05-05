@@ -7,23 +7,22 @@ folder_process = db.Table('folder_process',
                           db.Column("process_id", db.Integer, db.ForeignKey('process.id'))
                           )
 
-class ProcessDb(db.Model):
 
-    #query: db.Query
+class ProcessDb(db.Model):
 
     __tablename__ = 'process'
 
     id = db.Column(db.Integer, primary_key=True)
-    #globalId = db.Column(db.String(40), nullable=True)
+    # globalId = db.Column(db.String(40), nullable=True)
     created = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     celery_task_id = db.Column(db.String, nullable=False)
     scheduledFor = db.Column(db.DateTime, default=None, nullable=True)
     start = db.Column(db.DateTime, default=None, nullable=True)
     stop = db.Column(db.DateTime, default=None, nullable=True)
-    #forceful = db.Column(db.Boolean, nullable=True)
+    # forceful = db.Column(db.Boolean, nullable=True)
     folders = db.relationship('FolderDb', secondary=folder_process, backref='processes')
 
-    #__table_args__ = (db.UniqueConstraint('pid', 'stop', name='pid_stop_constaint'),)
+    # __table_args__ = (db.UniqueConstraint('pid', 'stop', name='pid_stop_constaint'),)
 
     def __repr__(self):
         return f"Process(                          \
@@ -37,10 +36,10 @@ class ProcessDb(db.Model):
             'id': self.id,
             'created': self.created,
             'scheduled_for': self.scheduledFor,
-            'start' : self.start,
-            'stop' : self.stop,
-            'scheduledFor' : self.scheduledFor,
-            'processStatus' : self.processStatus,
+            'start': self.start,
+            'stop': self.stop,
+            'scheduledFor': self.scheduledFor,
+            'processStatus': self.processStatus,
             'folders': url_for('api.get_process_folders', id=self.id)
         }
 
@@ -53,16 +52,15 @@ class ProcessDb(db.Model):
     def get_sender_processes_by_page(page, process_id):
         pass
 
-class FolderDb(db.Model):
 
-    #query: db.Query
+class FolderDb(db.Model):
     
     __tablename__ = 'folder'
 
     id = db.Column(db.Integer, primary_key=True)
     folderName = db.Column(db.String, nullable=False)
     folderPath = db.Column(db.String, nullable=False)
-    #processes = db.relationship('ProcessDb', secondary=folder_process, backref='folders')
+    # processes = db.relationship('ProcessDb', secondary=folder_process, backref='folders')
     images = db.relationship('Image', backref='folder')
 
     def __repr__(self):
@@ -72,20 +70,19 @@ class FolderDb(db.Model):
             folderPath={self.folderPath!r}"
     
     @classmethod
-    def create(cls, folderName, folderPath):
-        folder = cls(folderName=folderName, folderPath=folderPath)
+    def create(cls, folder_name, folder_path):
+        folder = cls(folderName=folder_name, folderPath=folder_path)
         db.session.add(folder)
         db.session.commit()
         return folder
 
     @staticmethod
-    def get_images(id):
-        folder = FolderDb.query.get(id)
+    def get_images(image_id):
+        folder = FolderDb.query.get(image_id)
         return list(folder.images)
 
-class Image(db.Model):
 
-    #query: db.Query
+class Image(db.Model):
 
     __tablename__ = 'image'
 
