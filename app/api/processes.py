@@ -1,4 +1,5 @@
 from flask import jsonify, request, g, url_for, current_app
+from celery.result import AsyncResult
 from .. import db, socketIo
 from ..models import ProcessDb
 from . import api
@@ -14,6 +15,15 @@ def get_process_api(id):
     proc = ProcessDb.query.get_or_404(id)
     return jsonify(proc.to_json())
 
+@api.route('/processes/celery_task/<id>', methods=['GET'])
+def get_process_celery_task(id):
+    result = AsyncResult(id)
+    return {
+            "ready": result.ready(),
+            "successful": result.successful(),
+            "value": result.result if result.ready() else None,
+            "time": result.date_done
+        }
 
 @api.route('/processes/folders/<int:id>/')
 def get_process_folders(id):

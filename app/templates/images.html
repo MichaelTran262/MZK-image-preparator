@@ -21,7 +21,7 @@
                 <td>{{ image.filename }}</td>
                 <td class="border-left">{{ image.folder.folderName }}</td>
                 <td>{{ image.time_created }}</td>
-                <td>{{ image.celery_task_id }}</td>
+                <td><a href="/celery_task/{{ image.celery_task_id }}">{{ image.celery_task_id }}</a></td>
             </tr>
         {% endfor %}
       </tbody>

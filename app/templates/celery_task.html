@@ -1,0 +1,29 @@
+{% extends 'base_table.html' %}
+
+{% block body %}
+<div class="row p-3">
+  <div class="container pt-3">
+    <h2>Systémový (Celery) proces {{ record.uuid }}</h2>      
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>READY</th>
+          <th>Úspěch</th>
+          <th>Hodnota</th>
+          <th>Čas</th>
+          <th>Error zpráva</th>
+        </tr>
+      </thead>
+      <tbody>
+            <tr>
+                <td>{{ record.ready }}</td>
+                <td>{{ record.successful }}</td>
+                <td class="border-left">{{ record.value }}</td>
+                <td>{{ record.time }}</td>
+                <td>{{ record.traceback }}</td>
+            </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

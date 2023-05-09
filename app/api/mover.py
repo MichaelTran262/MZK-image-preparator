@@ -35,7 +35,7 @@ def send_to_mzk_progress(req_path):
     return jsonify({'current':current, 'total': total}), 200
 
 
-@shared_task(ignore_results=False)
-def api_create_process_and_run(src_path, username, password):
-    mover = DataMover(src_path, username, password)
+@shared_task(ignore_results=False, bind=True)
+def api_create_process_and_run(self, src_path, username, password):
+    mover = DataMover(src_path, username, password, self.request.id)
     mover.move_to_mzk_now()

@@ -1,5 +1,6 @@
 from flask import Flask, render_template, abort, request, jsonify, redirect, url_for
 from flask import current_app as app
+from celery.result import AsyncResult
 from .. import socketIo
 import multiprocessing
 import threading
@@ -132,6 +133,7 @@ def remove_folder():
     #dataSender.removeFolder(request.args["folder"])
     return jsonify({"status": "ok"})
 
+
 @main.route('/send_to_mzk_now/home/<path:req_path>', methods=['POST'])
 @main.route('/send_to_mzk_now/<path:req_path>', methods=['POST'])
 def send_folder(req_path):
@@ -140,6 +142,7 @@ def send_folder(req_path):
     t.daemon = True
     t.start()
     return redirect(url_for('main.get_processes'))
+
 
 @main.route('/send_to_mzk_later/home/<path:req_path>', methods=['POST'])
 @main.route('/send_to_mzk_later/<path:req_path>', methods=['POST'])
@@ -158,12 +161,30 @@ def schedule_send_folder(req_path):
             return_path=return_path)
     else:
         return redirect(url_for('main.get_processes'))
-    
+
+
+@main.route('/home/celery_task/<int:id>', methods=['GET'])
+@main.route('/celery_task/<int:id>', methods=['GET'])
+def get_celery_task(id):
+    pass
+
     
 @main.route('/cancel_send', methods=['POST'])
 def cancel_send():
     return '', 200
 
+@main.route('/celery_task/<id>', methods=['GET'])
+def get_process_celery_task(id):
+    result = AsyncResult(id)
+    dict = {
+            "uuid": id,
+            "ready": result.ready(),
+            "successful": result.successful(),
+            "value": result.result if result.ready() else None,
+            "time": result.date_done,
+            "traceback": result.traceback if result.traceback else "Žádný"
+        }
+    return render_template('celery_task.html', record=dict)
 #End of endpoints
 
 def check_dir(path):

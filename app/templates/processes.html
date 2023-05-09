@@ -10,7 +10,7 @@
           <th>ID</th>
           <th>Čas vytvoření</th>
           <th>Plánovaný čas odeslání</th>
-          <th>Status</th>
+          <th>Celery UUID</th>
           <th>Složky</th>
         </tr>
       </thead>
@@ -25,7 +25,7 @@
                 {% else %} 
                   Žádný
                 {% endif %}</td>
-                <td>{{ process.processStatus }}</th>
+                <td><a href="/celery_task/{{ process.celery_task_id }}">{{ process.celery_task_id }}</a></th>
                 <td><a class="btn btn-primary" role="button" href="{{ url_for('main.get_process_folders', id=process.id) }}">Zobrazit</button></td>
             </tr>
         {% endfor %}

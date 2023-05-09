@@ -128,11 +128,10 @@ class DataMover():
         try:
             folder = FolderDb(folderName=os.path.split(self.src_path)[1], folderPath=self.src_path)
             db.session.add(folder)
-            process = ProcessDb(processStatus='Created', celery_task_id=self.celery_task_id)
+            process = ProcessDb(celery_task_id=self.celery_task_id)
             process.folders.append(folder)
             db.session.add(process)
             db.session.commit()
-            print("Insertion OK")
         except Exception as e:
             print("Problem with dabatase: ", e)
             return
