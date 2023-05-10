@@ -71,7 +71,7 @@ class DataMover():
                 for name in files:
                     transferred.append(os.path.join(path, name))
         except Exception as e:
-            return 0, 1
+            return 0, 0
         return len(transferred), total_files
 
     @staticmethod

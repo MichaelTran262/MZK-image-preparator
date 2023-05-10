@@ -80,6 +80,8 @@ def get_processes():
     procs = ProcessWrapper.get_processes_by_page(page)
     if procs is None:
         abort(404)
+    for proc in procs:
+        proc.state = AsyncResult(proc.celery_task_id).state
     return render_template('processes.html', processes=procs)
 
 @main.route('/get_process_folders/<int:id>', methods=['GET'])
@@ -162,16 +164,11 @@ def schedule_send_folder(req_path):
     else:
         return redirect(url_for('main.get_processes'))
 
-
-@main.route('/home/celery_task/<int:id>', methods=['GET'])
-@main.route('/celery_task/<int:id>', methods=['GET'])
-def get_celery_task(id):
-    pass
-
     
 @main.route('/cancel_send', methods=['POST'])
 def cancel_send():
     return '', 200
+
 
 @main.route('/celery_task/<id>', methods=['GET'])
 def get_process_celery_task(id):
@@ -179,6 +176,7 @@ def get_process_celery_task(id):
     dict = {
             "uuid": id,
             "ready": result.ready(),
+            "state": result.state,
             "successful": result.successful(),
             "value": result.result if result.ready() else None,
             "time": result.date_done,

@@ -122,7 +122,7 @@ def prepare_folder(base_dir, app, req_path):
 
 def copy_images(src_dir, krom_dirs):
     #tif_files = os.listdir(src_dir)
-    folder = models.FolderDb.create(folderName=src_dir, folderPath=src_dir)
+    folder = models.FolderDb.create(folder_name=src_dir, folder_path=src_dir)
     total_files = 0
     for root, dirs, files in os.walk(src_dir):
         total_files += len([file for file in files if file.endswith(".tiff") or file.endswith(".tif")])

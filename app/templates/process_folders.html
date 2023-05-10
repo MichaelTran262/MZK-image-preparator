@@ -7,7 +7,6 @@
     <table class="table table-bordered">
       <thead>
         <tr>
-          <th>ID</th>
           <th>Jméno složky</th>
           <th>cesta</th>
         </tr>
@@ -15,7 +14,6 @@
       <tbody>
         {% for folder in folders %}
             <tr>
-                <td>{{ folder.id }}</th>
                 <td class="border-left">{{ folder.folderName }}</td>
                 <td>{{ folder.folderPath }}</td>
             </tr>

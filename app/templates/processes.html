@@ -3,13 +3,16 @@
 {% block body %}
 <div class="row p-3">
   <div class="container pt-3">
-    <h2>Záznamy procesů</h2>      
+    <h2>Záznamy procesů</h2>
+    <ul>
+      <li></li>
+    </ul>      
     <table class="table table-bordered">
       <thead>
         <tr>
           <th>ID</th>
           <th>Čas vytvoření</th>
-          <th>Plánovaný čas odeslání</th>
+          <th>Stav</th>
           <th>Celery UUID</th>
           <th>Složky</th>
         </tr>
@@ -20,8 +23,8 @@
                 <td>{{ process.id }}</th>
                 <td>{{ process.created }}</td>
                 <td class="border-left">
-                {% if process.scheduledFor %}
-                  {{ process.scheduledFor.strftime('%d.%m.%Y, %H:%M') }}
+                {% if process.state %}
+                  {{ process.state }}
                 {% else %} 
                   Žádný
                 {% endif %}</td>

@@ -18,8 +18,10 @@ def get_process_api(id):
 @api.route('/processes/celery_task/<id>', methods=['GET'])
 def get_process_celery_task(id):
     result = AsyncResult(id)
+    print(result.info)
     return {
             "ready": result.ready(),
+            "state": result.state,
             "successful": result.successful(),
             "value": result.result if result.ready() else None,
             "time": result.date_done

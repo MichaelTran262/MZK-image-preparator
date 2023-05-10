@@ -27,13 +27,11 @@ $(document).ready(function() {
                 }
                 $('#transferModal').modal('show');
                 $('#transferNowButton').on('click', function() {
-                    console.log('hello');
                     $.ajax({
                         type: "POST",
                         url: send_url,
                         dataType: "json",
                         success: function(result){
-                            console.log(result);
                             update_transfer_progress(progress_url);
                             $('#transferNowButton').hide();
                             $('#transferLaterButton').hide();
@@ -64,6 +62,9 @@ function update_transfer_progress(url) {
             url: url,
             dataType: 'json',
             success: function(data) {
+                if (data.total == 0) {
+                    return;
+                }
                 if (data.current == data.total) {
                     console.log("current equals total")
                     clearInterval(progressId);

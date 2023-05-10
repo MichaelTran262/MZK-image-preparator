@@ -38,8 +38,9 @@ class LocalDevelopmentConfig(DevelopmentConfig):
     DST_FOLDER = ''
 
     CELERY = dict(
-        broker_url= "redis://localhost:6379/0",
-        result_backend= f"db+postgresql://{DevelopmentConfig.DB_USER}:{DevelopmentConfig.DB_PASSWORD}@{DB_SERVER}/mzkdata",
-        worker_concurrency= 4
+        broker_url = "redis://localhost:6379/0",
+        result_backend = f"db+postgresql://{DevelopmentConfig.DB_USER}:{DevelopmentConfig.DB_PASSWORD}@{DB_SERVER}/mzkdata",
+        task_track_started = True,
+        timezone = "Europe/Prague",
+        worker_concurrency = 8
     )
-

@@ -1,7 +1,8 @@
 version: '3'
+
 services:
   app:
-    image: michaeltran262/mzk-preparator-app:1.1.4
+    image: michaeltran262/mzk-preparator-app:1.1.5
     container_name: mzk-preparator-app
     ports:
       - "5000:5000"
@@ -21,6 +22,11 @@ services:
     links:
       - mzk-postgres
     restart: always
+    depends_on:
+      - mzk-postgres
+      - redis
+      - celery-worker
+
   mzk-postgres:
     image: postgres:15
     container_name: mzk-postgres
@@ -32,6 +38,18 @@ services:
       - "5432:5432"
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
+    
+  redis:
+    image: redis:6-alpine
+    expose:
+      - 6379
+    ports:
+      - "6379:6379"
+
+  celery-worker:
+    image: michaeltran262/mzk-preparator-app:1.1.5
+    
+
   nginx:
     image: nginx:1.24-alpine
     volumes:
@@ -40,7 +58,3 @@ services:
       - 8080:80
     depends_on:
       - app
-  redis:
-    image: redis:6-alpine
-    ports:
-      - "6379:6379"
