@@ -1,25 +1,24 @@
 {% extends 'base_table.html' %}
 
 {% block body %}
+<script src="{{ url_for('static', filename='js/processes.js') }}"></script>
 <div class="row p-3">
   <div class="container pt-3">
     <h2>Záznamy procesů</h2>
-    <ul>
-      <li></li>
-    </ul>      
     <table class="table table-bordered">
       <thead>
         <tr>
           <th>ID</th>
           <th>Čas vytvoření</th>
           <th>Stav</th>
-          <th>Celery UUID</th>
+          <th>UUID</th>
           <th>Složky</th>
+          <th>Akce</th>
         </tr>
       </thead>
       <tbody>
         {% for process in processes.items %}
-            <tr id="row-{{ process.id }}">
+            <tr id="{{ process.celery_task_id }}">
                 <td>{{ process.id }}</th>
                 <td>{{ process.created }}</td>
                 <td class="border-left">
@@ -29,7 +28,14 @@
                   Žádný
                 {% endif %}</td>
                 <td><a href="/celery_task/{{ process.celery_task_id }}">{{ process.celery_task_id }}</a></th>
-                <td><a class="btn btn-primary" role="button" href="{{ url_for('main.get_process_folders', id=process.id) }}">Zobrazit</button></td>
+                <td><a class="btn btn-primary" role="button" href="{{ url_for('main.get_process_folders', id=process.id) }}">Zobrazit</a></td>
+                {% if process.state == "STARTED" %}
+                <td>
+                  <button type="button" class="cancel-button btn btn-danger">Ukončit</button>
+                </td>
+                {% else %}
+                <td> - </td>
+                {% endif %}
             </tr>
         {% endfor %}
       </tbody>
