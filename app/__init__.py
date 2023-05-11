@@ -13,7 +13,7 @@ DEBUG = True
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_object(LocalDevelopmentConfig())
+    app.config.from_object(ProductionConfig())
     db.init_app(app)
     socketIo.init_app(app, cors_allowed_origins="*")
     celery_init_app(app)
