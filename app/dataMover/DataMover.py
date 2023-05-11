@@ -37,7 +37,6 @@ class DataMover():
             return
         if conds['exists_at_mzk']:
             return
-        print("HELLO")
         self.send_files()
 
     def move_to_mzk_later(self):
@@ -156,13 +155,16 @@ class DataMover():
         for folder in process.folders:
             conn.createDirectory('NF', '/MUO/test_tran/' + folder.folderName)
             # send to MZK
-            for path, subdirs, files in os.walk(folder.folderPath + '/2'):
-                for name in files:
-                    file = os.path.join(path, name)
-                    print("Storing file: /MUO/test_tran/" + folder.folderName + '/' + name)
+            # src dir is folder named 2
+            src_dir = folder.folderPath + '/2'
+            for path, subdirs, files in os.walk(src_dir):
+                for filename in files:
+                    file = os.path.join(path, filename)
+                    rel_dir = os.path.relpath(path, src_dir)
+                    rel_file = os.path.join(rel_dir, filename)
                     with open(file, 'rb') as local_f:
-                        conn.storeFile('NF', '/MUO/test_tran/' + folder.folderName + '/' + name, local_f)
-                    #t.sleep(1)
+                        conn.storeFile('NF', '/MUO/test_tran/' + folder.folderName + '/' + rel_file, local_f)
+                    t.sleep(1)
                     #done_files += 1
         conn.close()
         # Change status to SENT
