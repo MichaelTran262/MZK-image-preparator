@@ -1,19 +1,16 @@
 version: '3'
 
 services:
-  app:
-    image: michaeltran262/mzk-preparator-app:1.1.5
+  mzk-preparator-app:
+    image: michaeltran262/mzk-preparator-app:1.1.5-local
     container_name: mzk-preparator-app
-    ports:
-      - "5000:5000"
+    expose:
+      - 5000
     volumes:
-#      - ./:/image-preparator
-      - ./:/preparator
       - ./data:/mnt/data
       - ./logs:/logs
       - ./config.py:/preparator/config.py
-#    command: "flask run --host=0.0.0.0"
-    command: "gunicorn -b 0.0.0.0:5000 --chdir /preparator --worker-tmp-dir /dev/shm --workers=1 -k eventlet --log-level debug flask_app:app"
+    command: "gunicorn -b 0.0.0.0:5000 --chdir /preparator --worker-tmp-dir /dev/shm --workers=1 -k eventlet --log-level debug preparator:flask_app"
     environment:
       - FLASK_APP=flask_app.py
       - FLASK_DEBUG=0
@@ -26,6 +23,43 @@ services:
       - mzk-postgres
       - redis
       - celery-worker
+    
+  celery-worker:
+    image: michaeltran262/mzk-preparator-app:1.1.5-local
+    volumes:
+      - ./data:/mnt/data
+      - ./logs:/logs
+      - ./config.py:/preparator/config.py
+    command: "celery -A preparator:celery_app worker"
+    environment:
+      - FLASK_APP=flask_app.py
+      - FLASK_DEBUG=0
+      - SRC_FOLDER=/mnt/data
+      - DST_FOLDER=/mnt/data
+    links:
+      - mzk-postgres
+    restart: always
+    
+  flower:
+    image: michaeltran262/mzk-preparator-app:1.1.5-local
+    volumes:
+      - ./data:/mnt/data
+      - ./logs:/logs
+      - ./config.py:/preparator/config.py
+      - ./flower:/flower
+    command: "celery -A preparator:celery_app flower --persistent=True --db=/flower/flower.db --max_tasks=1000"
+    environment:
+      - FLASK_APP=flask_app.py
+      - FLASK_DEBUG=0
+      - SRC_FOLDER=/mnt/data
+      - DST_FOLDER=/mnt/data
+    depends_on:
+      - celery-worker
+    restart: always
+    ports:
+      - "5555:5555"
+    expose:
+      - 5555
 
   mzk-postgres:
     image: postgres:15
@@ -45,16 +79,14 @@ services:
       - 6379
     ports:
       - "6379:6379"
-
-  celery-worker:
-    image: michaeltran262/mzk-preparator-app:1.1.5
-    
+    depends_on:
+      - mzk-postgres
 
   nginx:
     image: nginx:1.24-alpine
     volumes:
-      - ./nginx/sites-enabled.conf:/etc/nginx/conf.d/sites-enabled.conf
+      - ./nginx/sites-enabled.conf:/etc/nginx/conf.d/default.conf
     ports:
-      - 8080:80
-    depends_on:
-      - app
+      - 5000:8080
+    links:
+      - mzk-preparator-app

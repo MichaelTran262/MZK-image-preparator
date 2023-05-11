@@ -19,9 +19,19 @@ class ProductionConfig(Config):
     SRC_FOLDER = os.environ.get('SRC_FOLDER')
     DST_FOLDER = os.environ.get('DST_FOLDER') 
     DB_USER = 'postgres' #Production ready
+    DB_SERVER = 'mzk-postgres'
     DB_PASSWORD = 'password' #Production ready
     SMB_USER = os.environ.get('SMB_USER') #Production ready
     SMB_PASSWORD = os.environ.get('SMB_PASSWORD') #Production ready
+
+    CELERY = dict(
+        broker_url = "redis://redis:6379/0",
+        result_backend = f"db+postgresql://{DB_USER}:{DB_PASSWORD}@{DB_SERVER}/mzkdata",
+        task_track_started = True,
+        timezone = "Europe/Prague",
+        worker_concurrency = 8
+    )
+
 
 class DevelopmentConfig(Config):
     SRC_FOLDER = os.environ.get('SRC_FOLDER') or ''
