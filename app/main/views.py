@@ -84,17 +84,20 @@ def get_processes():
         proc.state = AsyncResult(proc.celery_task_id).state
     return render_template('processes.html', processes=procs)
 
+
 @main.route('/get_process_folders/<int:id>', methods=['GET'])
 def get_process_folders(id):
     proc = ProcessDb.query.get(id)
     folders = ProcessDb.get_folders(id)
     return render_template("process_folders.html", process=proc.id, folders=folders)
 
+
 @main.route('/folder_images/<int:id>', methods=['GET'])
 def get_folder_images(id):
     folder = FolderDb.query.get(id)
     images = FolderDb.get_images(id)
     return render_template("folder_images.html", folder=folder.folderName, images=images)
+
 
 @main.route('/images', methods=['GET'])
 def get_images():
@@ -103,6 +106,7 @@ def get_images():
     if images is None:
         abort(404)
     return render_template('images.html',images=images)
+
 
 @main.route('/active-processes', methods=['GET'])
 def get_active_processes():
@@ -113,7 +117,7 @@ def get_active_processes():
     return '', 200
 
 #Chudyho endpointy
-
+'''
 @main.route('/add_folder/<path:req_path>', methods=['POST'])
 @main.route('/add_folder/home/<path:req_path>', methods=['POST'])
 def add_new_folder(req_path):
@@ -163,11 +167,7 @@ def schedule_send_folder(req_path):
             return_path=return_path)
     else:
         return redirect(url_for('main.get_processes'))
-
-    
-@main.route('/cancel_send', methods=['POST'])
-def cancel_send():
-    return '', 200
+'''
 
 
 @main.route('/celery_task/<id>', methods=['GET'])

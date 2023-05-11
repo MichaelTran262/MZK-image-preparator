@@ -127,7 +127,6 @@ def copy_images(src_dir, krom_dirs):
     for root, dirs, files in os.walk(src_dir):
         total_files += len([file for file in files if file.endswith(".tiff") or file.endswith(".tif")])
     processed = 0
-    socketIo.emit('preparation', {'current': processed, 'total': total_files})
     for root, dirs, files in os.walk(src_dir):
         for dir in dirs:
             full_path = os.path.join(root, dir)
