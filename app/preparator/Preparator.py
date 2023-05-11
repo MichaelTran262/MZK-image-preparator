@@ -129,11 +129,12 @@ def copy_images(src_dir, krom_dirs):
     processed = 0
     for root, dirs, files in os.walk(src_dir):
         for dir in dirs:
-            full_path = os.path.join(root, dir)
-            dir3 = os.path.join(krom_dirs[3], os.path.relpath(full_path, src_dir))
-            os.makedirs(dir3)
-            dir4 = os.path.join(krom_dirs[4], os.path.relpath(full_path, src_dir))
-            os.makedirs(dir4)
+            if dir not in [u'.', u'..']:
+                full_path = os.path.join(root, dir)
+                dir3 = os.path.join(krom_dirs[3], os.path.relpath(full_path, src_dir))
+                os.makedirs(dir3)
+                dir4 = os.path.join(krom_dirs[4], os.path.relpath(full_path, src_dir))
+                os.makedirs(dir4)
         for filename in files:
             if filename.endswith(".tiff") or filename.endswith(".tif"):
                 src_file = os.path.join(root, filename)

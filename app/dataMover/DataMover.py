@@ -158,6 +158,11 @@ class DataMover():
             # src dir is folder named 2
             src_dir = folder.folderPath + '/2'
             for path, subdirs, files in os.walk(src_dir):
+                for dir in subdirs:
+                    if dir not in [u'.', u'..']:
+                        full_dir = os.path.join(path, dir)
+                        rel_dir = os.path.relpath(full_dir, src_dir)
+                        conn.createDirectory('NF', '/MUO/test_tran/' + folder.folderName + '/' + rel_dir)
                 for filename in files:
                     file = os.path.join(path, filename)
                     rel_dir = os.path.relpath(path, src_dir)
