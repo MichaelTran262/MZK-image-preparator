@@ -1,7 +1,11 @@
 venv
-testFolder
+data
 logs
 postgres-data
 .vscode
 .git
+.idea
 nginx
+**/__pycache__
+*.pyc
+flower
