@@ -45,7 +45,7 @@ class DevelopmentConfig(Config):
 class LocalDevelopmentConfig(DevelopmentConfig):
     DB_SERVER = 'localhost:5432'
     SRC_FOLDER = '/home/tran/Desktop/git/github/MichaelTran262/image-preparator/data'
-    DST_FOLDER = ''
+    DST_FOLDER = '/MUO/test_tran/'
 
     CELERY = dict(
         broker_url = "redis://localhost:6379/0",

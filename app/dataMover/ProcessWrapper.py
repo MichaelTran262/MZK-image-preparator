@@ -5,7 +5,6 @@ import signal
 
 from uuid import uuid4
 from . import Folder
-from ..Utility import Utility
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 

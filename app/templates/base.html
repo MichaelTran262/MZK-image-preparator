@@ -34,22 +34,7 @@
       </nav>
     <div class="container pt-5">
         <div class="row">
-            <div class="jumbotron col-md-4">
-                <h3>Informace o aplikaci</h3>
-                <p>
-                    <ul>
-                        <li>Napravo je seznam dostupných složek pro přípravu obrázků</li>
-                        <li>Tato aplikce <b>POUZE vytváří</b> složky <b>2</b> a <b>3</b> a jejich příslušné obrázky, nic se nemaže ani nepřepisuje, pokud neexistují 2 a 3.</li>
-                        <li>Po kliknutí na akci 'Připravit složky 3 a 4' vytvoří program obrázky pro danout složku, pokud:</li>
-                        <ol>
-                            <li>Existuje uvnitř složka <b>2</b></li>
-                            <li>Neexistují složky <b>3</b> a <b>4</b></li>
-                        </ol>
-                        <li>Po vytvoření složek a obrázků je vhodná manuální kontrola</li>
-                    </ul>
-                </p>
-            </div>
-            <div class="content jumbotron col-md-8">
+            <div class="content jumbotron">
                 {% block body %}{% endblock %}
             </div>
         </div>

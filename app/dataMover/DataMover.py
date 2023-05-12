@@ -13,7 +13,7 @@ from smb.SMBConnection import SMBConnection
 
 class DataMover():
 
-    nf_path = '/MUO/test_tran/'
+    nf_path = os.environ.get('DST_FOLDER')
 
     def __init__(self, src_path, user, password, celery_task_id):
         self.dirs = dirs = {
@@ -55,11 +55,11 @@ class DataMover():
             print('SMBConnection object creation unsuccessfull: ' + e)
             return
         try:
-            conn.connect('10.2.0.8', timeout=10)
+            conn.connect('10.223.1.8', timeout=10)
             print('Connection successfull')
-        except:
+        except Exception as e:
             print('Connection unsuccessfull: ' + e)
-            return
+            raise(e)
         total_files = 0
         krom_dir2 = folder + '/2'
         for path, subdirs, files in os.walk(krom_dir2):
@@ -105,11 +105,12 @@ class DataMover():
             print('SMBConnection creation unsuccessfull: ', e)
             return return_dict
         try:
-            conn.connect('10.2.0.8', timeout=10)
+            conn.connect('10.223.1.8', timeout=10)
             print('Connection successfull')
         except Exception as e:
             print("Connection unsuccessfull")
-            return return_dict
+            return_dict['exists_at_mzk'] = "Connection Unsuccessfull"
+            raise(e)
         # Create connection, listPath
         try:
             files = conn.listPath('NF', DataMover.nf_path)
@@ -141,11 +142,11 @@ class DataMover():
             print('SMBConnection creation unsuccessfull: ', e)
             return
         try:
-            conn.connect('10.2.0.8')
+            conn.connect('10.223.1.8', timeout=10)
             print('Connection successfull')
         except Exception as e:
             print("Connection unsuccessfull")
-            return
+            raise(e)
         for folder in process.folders:
             for path, subdirs, files in os.walk(folder.folderPath + '/2'):
                 self.total_directories += len(subdirs)
@@ -153,7 +154,7 @@ class DataMover():
         done_directories = 0
         done_files = 0
         for folder in process.folders:
-            conn.createDirectory('NF', '/MUO/test_tran/' + folder.folderName)
+            conn.createDirectory('NF', DataMover.nf_path + folder.folderName)
             # send to MZK
             # src dir is folder named 2
             src_dir = folder.folderPath + '/2'
@@ -162,13 +163,15 @@ class DataMover():
                     if dir not in [u'.', u'..']:
                         full_dir = os.path.join(path, dir)
                         rel_dir = os.path.relpath(full_dir, src_dir)
-                        conn.createDirectory('NF', '/MUO/test_tran/' + folder.folderName + '/' + rel_dir)
+                        print("Creating directory: " + DataMover.nf_path + folder.folderName + '/' + rel_file, local_f)
+                        conn.createDirectory('NF', DataMover.nf_path + folder.folderName + '/' + rel_dir)
                 for filename in files:
                     file = os.path.join(path, filename)
                     rel_dir = os.path.relpath(path, src_dir)
                     rel_file = os.path.join(rel_dir, filename)
+                    print("Transferring to: " + DataMover.nf_path + folder.folderName + '/' + rel_file, local_f)
                     with open(file, 'rb') as local_f:
-                        conn.storeFile('NF', '/MUO/test_tran/' + folder.folderName + '/' + rel_file, local_f)
+                        conn.storeFile('NF', DataMover.nf_path + folder.folderName + '/' + rel_file, local_f)
                     t.sleep(1)
                     #done_files += 1
         conn.close()
