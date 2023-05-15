@@ -1,6 +1,5 @@
 from flask import jsonify, request, g, url_for
 from flask import current_app as app
-from .. import db, socketIo
 from . import api
 import os
 import threading
@@ -10,9 +9,7 @@ from ..preparator.Preparator import check_condition, prepare_folder, progress
 @api.route('/prepare/check_folder_condition/home/<path:req_path>', methods=['GET', 'POST'])
 @api.route('/prepare/check_folder_condition/<path:req_path>', methods=['GET', 'POST'])
 def prepare_check_folder_conditions(req_path):
-    print(req_path)
     abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
-    print(abs_path)
     conditions = check_condition(abs_path)
     return conditions, 200
 

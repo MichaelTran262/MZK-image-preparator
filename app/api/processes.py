@@ -23,7 +23,6 @@ def get_process_api(id):
 @api.route('/processes/celery_task/<id>', methods=['GET'])
 def get_process_celery_task(id):
     result = AsyncResult(id)
-    print(result.info)
     return {
             "ready": result.ready(),
             "state": result.state,
@@ -85,6 +84,18 @@ def send_to_mzk_progress(req_path):
     current, total = DataMover.get_folder_progress(folder=abs_path, foldername=foldername, username=app.config['SMB_USER'], password=app.config['SMB_PASSWORD'])
     return jsonify({'current':current, 'total': total}), 200
 
+
+@api.route('/folder/mzk/<folder_name>', methods=['GET'])
+def is_folder_at_mzk(folder_name):
+    conn = DataMover.establish_connection()
+    path = '/MUO/test_tran'
+    result = DataMover.find_directory(conn, path, folder_name)
+    return jsonify({'folder': folder_name, 'result': result})
+
+@api.route('/mzk/connection', methods=['GET'])
+def get_mzk_connection():
+    conn_exists, msg = DataMover.check_connection()
+    return jsonify({"connection": conn_exists, "message": msg})
 
 @shared_task(ignore_results=False, bind=True)
 def api_create_process_and_run(self, src_path, username, password):

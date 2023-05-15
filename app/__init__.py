@@ -1,21 +1,18 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from flask_socketio import SocketIO
 from flask.logging import default_handler
 from celery import Celery, Task
 import logging
 from config import *
 
 db = SQLAlchemy()
-socketIo = SocketIO() 
 
 DEBUG = True
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_object(ProductionConfig())
+    app.config.from_object(LocalDevelopmentConfig())
     db.init_app(app)
-    socketIo.init_app(app, cors_allowed_origins="*")
     celery_init_app(app)
 
     from .main import main as main_blueprint

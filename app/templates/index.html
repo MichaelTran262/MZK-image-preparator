@@ -5,14 +5,15 @@
 
 {% block body %}
     <script src="{{ url_for('static', filename='js/init.js') }}"></script>
+    <p>MZK tlačítko se objeví, pokud složka začíná s názvem DIG nebo kDIG.</p>
     <input type="text" id="myInput" placeholder="Hledat složku...">
     <div class="row">
         <div class="col">
             <i class="fa fa-arrow-left"></i><a href="{{ prev_page }}">Zpět</a><br>
-            <i class="fa fa-home"></i><a href="/">Zpět na kořenovou složku</a>
+            <i class="fa fa-home"></i><a href="/home/">Zpět na kořenovou složku</a>
         </div>
         <div class="col">
-          <p style="display:inline">Počet aktivních procesů: <b id="proc_count"></b></p>
+          <p style="display:inline">Počet obrázků ve složce: <b>{{ file_count }}</b></p>
         </div>
       </div>
     <table class="table" id="dirTable">
@@ -26,13 +27,21 @@
             {% for file in files %}
                 <tr>
                     <td><a href="/home/{{ file.dirpath }}"><i class="fa fa-folder-open"></i>{{ file.dirname }}</a></td>
-                    <td class="actions"><button type="button" class="prepare-button btn btn-primary">Připravit složky 3 a 4</button></td>
-                    <td class="actions"><button type="button" class="transfer-button btn btn-primary">Poslat do MZK</button></td>
+                    <td class="actions">
+                      {% if file.hasDirThree or file.hasDirFour %}
+                      <button type="button" class="btn btn-primary" style="width: 175px;" disabled>Vytvořeno</button>
+                      {% else %}
+                      <button type="button" class="prepare-button btn btn-primary" style="width: 175px;">Připravit složky 3 a 4</button>
+                      {% endif %}
+                      <button type="button" class="transfer-button btn btn-info" style="margin-left: 30px; width: 160px;" disabled>
+                        <div class="spinner-border spinner-border-sm" ></div>
+                      </button>
+                    </td>
                 </tr>
             {% endfor %}
-            <tr><td>Počet obrázků ve složce: {{ file_count }}</td></tr>
         </tbody>
     </table>
+    <!-- PREPARE MODAL -->
     <div id="prepareModal" class="modal" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-lg" role="document">
           <div class="modal-content">
@@ -49,6 +58,7 @@
           </div>
         </div>
     </div>
+    <!-- TRANSFER MODAL-->
     <div id="transferModal" class="modal" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-lg" role="document">
           <div class="modal-content">
@@ -62,7 +72,7 @@
                 <div class="modal-footer">
                         <button type="button" class="btn btn-default" data-dismiss="modal">Zavřít</button>
                         <button id="transferNowButton" class="btn btn-primary">Poslat IHNED</button>
-                        <button id="transferLaterButton" class="btn btn-danger" disabled>Poslat o půlnoci</button>
+                        <button id="transferLaterButton" class="btn btn-danger" disabled>Poslat o víkendu</button>
                 </div>
           </div>
         </div>

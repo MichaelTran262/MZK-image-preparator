@@ -5,6 +5,12 @@
 <div class="row p-3">
   <div class="container pt-3">
     <h2>Záznamy procesů</h2>
+    <ul>
+      <li>STARTED - Přenos PROBÍHÁ</li>
+      <li>SUCCESS - Přenos se zdařil</li>
+      <li>FAILURE - Při přenosu se stala chyba</li>
+      <li>REVOKED - Přenos byl ručně ukončen během běhu. Již přenesená data se z MZK NEsmažou.</li>
+    </ul>
     <table class="table table-bordered">
       <thead>
         <tr>
@@ -25,7 +31,7 @@
                 {% if process.state %}
                   {{ process.state }}
                 {% else %} 
-                  Žádný
+                  Žádná
                 {% endif %}</td>
                 <td><a href="/celery_task/{{ process.celery_task_id }}">{{ process.celery_task_id }}</a></th>
                 <td><a class="btn btn-primary" role="button" href="{{ url_for('main.get_process_folders', id=process.id) }}">Zobrazit</a></td>
@@ -73,19 +79,4 @@
     </p>
   </div>
 </div>
-<script>
-  /*
-  var socket = io.connect();
-
-  // listen for progress updates
-  socket.on('progress', function(data) {
-    // get the row ID for this transfer process
-    console.log(data)
-    var rowId = 'row-' + data.process_id;
-    console.log(rowId)
-    // update the progress bar for this row
-    //var progressBar = document.querySelector('#' + rowId + ' progress');
-    //progressBar.value = data.progress;
-  });*/
-</script>
 {% endblock %}

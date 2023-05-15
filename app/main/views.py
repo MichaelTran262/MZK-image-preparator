@@ -1,13 +1,12 @@
 from flask import Flask, render_template, abort, request, jsonify, redirect, url_for
 from flask import current_app as app
 from celery.result import AsyncResult
-from .. import socketIo
 import multiprocessing
 import threading
 import os
 import urllib.parse
 from . import main
-from ..preparator.Preparator import get_folders, get_file_count, prepare_folder, progress
+from ..preparator.Preparator import get_folders, get_file_count, prepare_folder, progress, get_folder_size
 from ..preparator.ImageWrapper import ImageWrapper
 from ..dataMover.ProcessWrapper import ProcessWrapper
 from ..dataMover.DataMover import DataMover
@@ -128,7 +127,6 @@ def add_new_folder(req_path):
             3: abs_path + '/3',
             4: abs_path + '/4'
         }
-        print(abs_path)
         return jsonify({"status": "ok"})
     else:
         return jsonify({"status": "ok"})

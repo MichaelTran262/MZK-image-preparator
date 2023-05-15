@@ -1,16 +1,13 @@
-from .. import db, socketIo
 from celery import shared_task
 from celery.result import AsyncResult
 import os
-import multiprocessing
-import threading
 from flask import Flask, request, render_template, url_for, abort, send_file, redirect, request, jsonify
-from flask_socketio import SocketIO
+from flask import current_app
 from .. import models
 import time as t
 from datetime import datetime
-import urllib.parse
-
+from smb.SMBConnection import SMBConnection
+from ..dataMover.DataMover import DataMover
 
 def check_condition(src_path):
     return_dict = {}
@@ -42,31 +39,32 @@ def check_condition(src_path):
 
 
 def get_folders(path, req_path):
-    files = os.listdir(path)
     dirs = []
-    for index, file in enumerate(files):
-        tmp_path = os.path.join(path, file)
-        if os.path.isdir(tmp_path):
-            tmp = {}
-            if req_path != '':
-                tmp['dirpath'] = req_path + "/" + file
-            else:
-                tmp['dirpath'] = file
-            tmp['dirname'] = file
-            tmp['isdir'] = True
-            tmp['hasDirTwo'] = False
-            tmp['hasDirThree'] = False
-            tmp['hasDirFour'] = False
-            for dir in os.listdir(tmp_path):
-                if dir == '2':
-                    tmp['hasDirTwo'] = True
-                elif dir == '3':
-                    tmp['hasDirThree'] = True
-                elif dir == '4':
-                    tmp['hasDirFour'] = True
-            dirs.append(tmp)
+    with os.scandir(path) as files:
+        for file in files:
+            tmp_path = os.path.join(path, file)
+            if not file.is_file():
+                tmp = {}
+                if req_path != '':
+                    tmp['dirpath'] = req_path + "/" + file.name
+                else:
+                    tmp['dirpath'] = file.name
+                tmp['dirname'] = file.name
+                tmp['isdir'] = True
+                tmp['hasDirTwo'] = False
+                tmp['hasDirThree'] = False
+                tmp['hasDirFour'] = False
+                for dir in os.scandir(tmp_path):
+                    if dir.name == '2':
+                        tmp['hasDirTwo'] = True
+                    elif dir.name == '3':
+                        tmp['hasDirThree'] = True
+                    elif dir.name == '4':
+                        tmp['hasDirFour'] = True
+                #is_folder_at_mzk(tmp['dirname'])
+                #tmp['size'] = get_folder_size(tmp_path)
+                dirs.append(tmp)
     return dirs
-
 
 def get_file_count(path, req_path):
     content = os.listdir(path)
@@ -85,6 +83,17 @@ def get_file_count(path, req_path):
                 tmp['isdir'] = False
                 files.append(tmp)
     return len(files)
+
+def get_folder_size(path):
+    total_size = 0
+    for dirpath, dirnames, filenames in os.walk(path):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            # skip if it is symbolic link
+            if not os.path.islink(fp):
+                total_size += os.path.getsize(fp)
+
+    return total_size/1000000 # in megabytes
 
 
 def prepare_folder(base_dir, app, req_path):
@@ -116,6 +125,7 @@ def prepare_folder(base_dir, app, req_path):
                     return "Složka 3 nebo 4 už existuje a není prázdná"
             else:
                 os.makedirs(dirs[dir])
+                os.chmod(dirs[dir], 0o0777)
     copy_images(dirs[2], dirs)
     return ''
 
@@ -133,8 +143,10 @@ def copy_images(src_dir, krom_dirs):
                 full_path = os.path.join(root, dir)
                 dir3 = os.path.join(krom_dirs[3], os.path.relpath(full_path, src_dir))
                 os.makedirs(dir3)
+                os.chmod(dir3, 0o0777)
                 dir4 = os.path.join(krom_dirs[4], os.path.relpath(full_path, src_dir))
                 os.makedirs(dir4)
+                os.chmod(dir4, 0o0777)
         for filename in files:
             if filename.endswith(".tiff") or filename.endswith(".tif"):
                 src_file = os.path.join(root, filename)

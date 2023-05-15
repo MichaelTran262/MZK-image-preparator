@@ -1,5 +1,3 @@
-socket = io.connect()
-
 $( document ).ready(function() {
     $('#myInput').keyup(function() {
         let filter = $('#myInput').val()
@@ -15,15 +13,51 @@ $( document ).ready(function() {
         }).hide();
     }
 
-    function get_proc_count() {
-        fetch('/active_proc_count')
+    $('#tableContent tr td:first-child').each(function() {
+        let column = $(this);
+        let foldername = column.text();
+        const blacklisted_folders = ["1", "2", "3", "4"]; 
+        let regex = /^(d|k)ig/i;
+        if (!regex.test(foldername) || blacklisted_folders.includes(foldername)) {
+            button = column.next('td').find('.transfer-button');
+            button.css('visibility','hidden');
+            return;
+        }
+        let url = '/api/folder/mzk/' + foldername
+        $.ajax({
+            type: 'GET',
+            url: url,
+            dataType: 'json',
+            success: function(data) {
+                button = column.next('td').find('.transfer-button');
+                let text = "";
+                if(data.result == null) {
+                    text = "Odeslat do MZK";
+                } else {
+                    text = "Odesláno";
+                }
+                $(button).text(text);
+            },
+            error: function(data) {
+                console.log("prepare_folders failed");
+            }
+        });
+    });
+
+    function get_connection_status() {
+        fetch('/api/mzk/connection')
             .then(res => res.json())
             .then(data => {
-                console.log(data.proc_count)
-                $('#proc_count').html(data.proc_count)
+                console.log(data)
+                if(data.connection) {
+                    $('#connectionDot').css("color", "green");
+                } else {
+                    $('#connectionDot').css("color", "red");
+                }
+                
             })
     }
     
-    //get_proc_count();
-    //setInterval(get_proc_count, 1000);
+    get_connection_status();
+    setInterval(get_connection_status, 10000);
 });

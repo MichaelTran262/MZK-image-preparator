@@ -1,5 +1,4 @@
-from .. import db, socketIo
-from flask_socketio import SocketIO
+from .. import db
 from flask import current_app
 from ..models import FolderDb, ProcessDb
 import os
@@ -29,6 +28,7 @@ class DataMover():
         self.total_directories = 0
         self.celery_task_id = celery_task_id
 
+
     # sends only one path
     def move_to_mzk_now(self):
         conds = DataMover.check_conditions(self.src_path, 
@@ -39,27 +39,57 @@ class DataMover():
             return
         self.send_files()
 
+
     def move_to_mzk_later(self):
         for dir in self.dirs:
             if dir == 2:
                 if not os.path.exists(self.dirs[dir]):
                     return "Chybí složka 2"
-                
+
+
+    @staticmethod
+    def check_connection():
+        username = str(current_app.config['SMB_USER'])
+        password = str(current_app.config['SMB_PASSWORD'])
+        ip = str(current_app.config['MZK_IP'])
+        try:
+            conn = SMBConnection(username, password, 'krom_app', ip, use_ntlm_v2=True)
+        except Exception as e:
+            current_app.logger.error('SMBConnection object creation unsuccessfull')
+            raise(e)
+        try:
+            auth = conn.connect(ip, timeout=5)
+        except Exception as e:
+            return False, "Problem with host, check MZK connection"
+        if auth:
+            return True, "Connection OK"
+        else:
+            return False, "Authentication unsuccessfull!"
+
+    @staticmethod
+    def establish_connection():
+        username = str(current_app.config['SMB_USER'])
+        password = str(current_app.config['SMB_PASSWORD'])
+        ip = str(current_app.config['MZK_IP'])
+        try:
+            conn = SMBConnection(username, password, 'krom_app', ip, use_ntlm_v2=True)
+        except Exception as e:
+            current_app.logger.error('SMBConnection object creation unsuccessfull')
+            raise(e)
+        try:
+            conn.connect(ip, timeout=10)
+            current_app.logger.debug('Connection successfull')
+        except Exception as e:
+            current_app.logger.debug('Connection UNSUCCESSFULL')
+            raise(e)
+        return conn
+
+
     @staticmethod
     def get_folder_progress(folder, foldername, username, password):
         mzk_path = os.path.join(DataMover.nf_path, foldername)
         return_dict = {}
-        try:
-            conn = SMBConnection(username, password, 'krom_app', '10.2.0.8', use_ntlm_v2=True)
-        except Exception as e:
-            print('SMBConnection object creation unsuccessfull: ' + e)
-            return
-        try:
-            conn.connect('10.223.1.8', timeout=10)
-            print('Connection successfull')
-        except Exception as e:
-            print('Connection unsuccessfull: ' + e)
-            raise(e)
+        conn = DataMover.establish_connection()
         total_files = 0
         krom_dir2 = folder + '/2'
         for path, subdirs, files in os.walk(krom_dir2):
@@ -72,6 +102,7 @@ class DataMover():
         except Exception as e:
             return 0, 0
         return len(transferred), total_files
+
 
     @staticmethod
     def smb_walk(conn, path):
@@ -88,6 +119,23 @@ class DataMover():
             for subpath in DataMover.smb_walk(conn, os.path.join(path, dirname)):
                 yield subpath
 
+
+    @staticmethod
+    def find_directory(conn, path, folder_name):
+        dirs = conn.listPath('NF', path)
+        for dir in dirs:
+            if dir.filename not in [u'.', u'..']:
+                #print(dir.filename)
+                if dir.isDirectory and dir.filename == folder_name:
+                    return f"{path}/{folder_name}"
+                elif dir.isDirectory:
+                    sub_dir_path = f"{path}/{dir.filename}"
+                    found_dir = DataMover.find_directory(conn, sub_dir_path, folder_name)
+                    if found_dir is not None:
+                        return found_dir
+        return None
+
+
     @staticmethod
     def check_conditions(src_path, foldername, username, password):
         mzk_path = DataMover.nf_path + foldername
@@ -99,23 +147,12 @@ class DataMover():
             return return_dict
         else:
             return_dict['folder_two'] = True
-        try:  
-            conn = SMBConnection(username, password, 'krom_app', '10.2.0.8', use_ntlm_v2=True)
-        except Exception as e:
-            print('SMBConnection creation unsuccessfull: ', e)
-            return return_dict
-        try:
-            conn.connect('10.223.1.8', timeout=10)
-            print('Connection successfull')
-        except Exception as e:
-            print("Connection unsuccessfull")
-            return_dict['exists_at_mzk'] = "Connection Unsuccessfull"
-            raise(e)
+        conn = DataMover.establish_connection()
         # Create connection, listPath
         try:
             files = conn.listPath('NF', DataMover.nf_path)
         except Exception as e:
-            print("Could not list files with listpath method")
+            current_app.logger.error("Could not list files with listpath method")
             raise(e)
         return_dict['exists_at_mzk'] = False
         for file in files:
@@ -123,6 +160,7 @@ class DataMover():
                 if foldername == file.filename:
                     return_dict['exists_at_mzk'] = True
         return return_dict
+
 
     def send_files(self):
         try:
@@ -133,20 +171,9 @@ class DataMover():
             db.session.add(process)
             db.session.commit()
         except Exception as e:
-            print("Problem with dabatase: ", e)
+            current_app.logger.info("Problem with dabatase: ", e)
             return
-        conn = None
-        try:  
-            conn = SMBConnection(self.username, self.password, 'krom_app', '10.2.0.8', use_ntlm_v2=True)
-        except Exception as e:
-            print('SMBConnection creation unsuccessfull: ', e)
-            return
-        try:
-            conn.connect('10.223.1.8', timeout=10)
-            print('Connection successfull')
-        except Exception as e:
-            print("Connection unsuccessfull")
-            raise(e)
+        conn = DataMover.establish_connection()
         for folder in process.folders:
             for path, subdirs, files in os.walk(folder.folderPath + '/2'):
                 self.total_directories += len(subdirs)
@@ -163,16 +190,15 @@ class DataMover():
                     if dir not in [u'.', u'..']:
                         full_dir = os.path.join(path, dir)
                         rel_dir = os.path.relpath(full_dir, src_dir)
-                        print("Creating directory: " + DataMover.nf_path + folder.folderName + '/' + rel_file, local_f)
+                        current_app.logger.debug("Creating directory: " + DataMover.nf_path + folder.folderName + '/' + rel_file)
                         conn.createDirectory('NF', DataMover.nf_path + folder.folderName + '/' + rel_dir)
                 for filename in files:
                     file = os.path.join(path, filename)
                     rel_dir = os.path.relpath(path, src_dir)
                     rel_file = os.path.join(rel_dir, filename)
-                    print("Transferring to: " + DataMover.nf_path + folder.folderName + '/' + rel_file, local_f)
+                    current_app.logger.debug("Transferring to: " + DataMover.nf_path + folder.folderName + '/' + rel_file)
                     with open(file, 'rb') as local_f:
                         conn.storeFile('NF', DataMover.nf_path + folder.folderName + '/' + rel_file, local_f)
-                    t.sleep(1)
                     #done_files += 1
         conn.close()
         # Change status to SENT
