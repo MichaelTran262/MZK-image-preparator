@@ -6,7 +6,6 @@ PROJECT_DIR = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(PROJECT_DIR, '.env'))
 
 class Config(object):
-    MZK_IP = os.environ.get('MZK_IP', 'X.X.X.X:XXXX')
     TESTING = False
     DB_SERVER = 'mzk-postgres'
     DB_NAME = 'mzkdata' #Production ready
@@ -16,6 +15,7 @@ class Config(object):
         return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_SERVER}/{self.DB_NAME}"
     
 class ProductionConfig(Config):
+    MZK_IP = os.environ.get('MZK_IP', '10.223.1.8')
     SRC_FOLDER = os.environ.get('SRC_FOLDER')
     DST_FOLDER = os.environ.get('DST_FOLDER') 
     DB_USER = 'postgres' #Production ready
@@ -34,9 +34,9 @@ class ProductionConfig(Config):
 
 
 class DevelopmentConfig(Config):
+    MZK_IP = os.environ.get('MZK_IP', '10.2.0.8')
     SRC_FOLDER = os.environ.get('SRC_FOLDER') or ''
     DST_FOLDER = os.environ.get('DST_FOLDER') or '' # ADD MZK
-
     SMB_USER = os.environ.get('SMB_USER')
     SMB_PASSWORD = os.environ.get('SMB_PASSWORD')
     DB_USER = 'postgres'

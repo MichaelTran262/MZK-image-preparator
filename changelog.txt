@@ -1,1 +1,2 @@
 1.1.5 - Přidání Celery a ukládání záznamů Celery procesů 
+1.1.6 - Refaktorizace kódu a vylepšení uživatelské přehlednosti s tlačítky
