@@ -17,7 +17,7 @@ $( document ).ready(function() {
         let column = $(this);
         let foldername = column.text();
         const blacklisted_folders = ["1", "2", "3", "4"]; 
-        let regex = /^(d|k)ig/i;
+        let regex = /^[k]?dig/i;
         if (!regex.test(foldername) || blacklisted_folders.includes(foldername)) {
             button = column.next('td').find('.transfer-button');
             button.css('visibility','hidden');

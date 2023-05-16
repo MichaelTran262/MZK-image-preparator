@@ -28,7 +28,7 @@
                 <tr>
                     <td><a href="/home/{{ file.dirpath }}"><i class="fa fa-folder-open"></i>{{ file.dirname }}</a></td>
                     <td class="actions">
-                      {% if file.hasDirThree or file.hasDirFour %}
+                      {% if file.hasDirThree and file.hasDirFour %}
                       <button type="button" class="btn btn-primary" style="width: 175px;" disabled>Vytvořeno</button>
                       {% else %}
                       <button type="button" class="prepare-button btn btn-primary" style="width: 175px;">Připravit složky 3 a 4</button>
