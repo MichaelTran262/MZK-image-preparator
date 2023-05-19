@@ -1,13 +1,12 @@
 import unittest
 from flask import current_app
-from app import create_app, db
+from preparator import create_app
 
 class BasicsTestCase(unittest.TestCase):
     def setUp(self):
-        self.app = create_app('testing')
+        self.app = create_app('development')
         self.app_context = self.app.app_context()
         self.app_context.push()
-        db.create_all()
 
     def tearDown(self):
         self.app_context.pop()
@@ -16,4 +15,4 @@ class BasicsTestCase(unittest.TestCase):
         self.assertFalse(current_app is None)
 
     def test_app_is_testing(self):
-        self.assertTrue(current_app.config['TESTING'])
+        self.assertTrue(current_app.config['MZK_IP'])
