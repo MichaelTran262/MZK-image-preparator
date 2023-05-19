@@ -33,10 +33,13 @@ $( document ).ready(function() {
                 let text = "";
                 if(data.result == null) {
                     text = "Odeslat do MZK";
+                    $(button).text(text);
+                    $(button).prop('disabled', false);
                 } else {
                     text = "Odesláno";
+                    $(button).text(text);
                 }
-                $(button).text(text);
+                
             },
             error: function(data) {
                 console.log("prepare_folders failed");

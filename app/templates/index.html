@@ -28,7 +28,7 @@
                 <tr>
                     <td><a href="/home/{{ file.dirpath }}"><i class="fa fa-folder-open"></i>{{ file.dirname }}</a></td>
                     <td class="actions">
-                      {% if file.hasDirThree and file.hasDirFour %}
+                      {% if file.hasDirThree or file.hasDirFour %}
                       <button type="button" class="btn btn-primary" style="width: 175px;" disabled>Vytvořeno</button>
                       {% else %}
                       <button type="button" class="prepare-button btn btn-primary" style="width: 175px;">Připravit složky 3 a 4</button>
@@ -41,6 +41,19 @@
             {% endfor %}
         </tbody>
     </table>
+    <!-- Modal Info -->
+    <div id="modalInfo" class="modal fade" id="myModal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 id="modalMessage" class="modal-title"></h5>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Zavřít</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- PREPARE MODAL -->
     <div id="prepareModal" class="modal" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-lg" role="document">
@@ -63,6 +76,10 @@
         <div class="modal-dialog modal-lg" role="document">
           <div class="modal-content">
                 <div id="transferModalBody"class="modal-body">
+                    <p id="jstreeCurrentDirectory"></p>
+                    <div id="jstree">  
+                      
+                    </div>
                     <div class="progress" style="height: 32px;">
                         <div id="transferProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" style="display:block"></div>
                     </div>
@@ -74,19 +91,6 @@
                         <button id="transferNowButton" class="btn btn-primary">Poslat IHNED</button>
                         <button id="transferLaterButton" class="btn btn-danger" disabled>Poslat o víkendu</button>
                 </div>
-          </div>
-        </div>
-    </div>
-    <!-- Modal -->
-    <div id="modalInfo" class="modal fade" id="myModal" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 id="modalMessage" class="modal-title"></h5>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">Zavřít</button>
-            </div>
           </div>
         </div>
     </div>

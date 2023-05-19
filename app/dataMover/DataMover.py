@@ -5,6 +5,8 @@ import os
 import multiprocessing
 import threading
 import time as t
+import shutil
+import re
 from datetime import datetime, time
 from apscheduler.schedulers.background import BackgroundScheduler
 from smb.SMBConnection import SMBConnection
@@ -12,15 +14,17 @@ from smb.SMBConnection import SMBConnection
 
 class DataMover():
 
-    nf_path = os.environ.get('DST_FOLDER')
+    # Na konci musí být lomitko!!!
+    nf_paths = ['/MUO/TIF/', '/MUO/BEZ OCR/', '/MUO/OCR/', '/MUO/K OREZU/', '/MUO/test_tran/']
 
-    def __init__(self, src_path, user, password, celery_task_id):
+    def __init__(self, src_path, dst_path, user, password, celery_task_id):
         self.dirs = dirs = {
             2: src_path + '/2',
             3: src_path + '/3',
             4: src_path + '/4'
         }
         self.src_path = src_path
+        self.dst_path = dst_path
         self.foldername = os.path.split(src_path)[1]
         self.username = user
         self.password = password
@@ -31,6 +35,7 @@ class DataMover():
 
     # sends only one path
     def move_to_mzk_now(self):
+        # TODO rewrite it
         conds = DataMover.check_conditions(self.src_path, 
             self.foldername, self.username, self.password)
         if not conds['folder_two']:
@@ -39,7 +44,7 @@ class DataMover():
             return
         self.send_files()
 
-
+    # TODO
     def move_to_mzk_later(self):
         for dir in self.dirs:
             if dir == 2:
@@ -86,8 +91,9 @@ class DataMover():
 
 
     @staticmethod
-    def get_folder_progress(folder, foldername, username, password):
-        mzk_path = os.path.join(DataMover.nf_path, foldername)
+    def get_folder_progress(folder, foldername):
+        dst_folder = DataMover.search_dst_folders(folder_name=foldername)
+        mzk_path = os.path.join(dst_folder, foldername)
         return_dict = {}
         conn = DataMover.establish_connection()
         total_files = 0
@@ -121,6 +127,16 @@ class DataMover():
 
 
     @staticmethod
+    def search_dst_folders(folder_name):
+        conn = DataMover.establish_connection()
+        for path in DataMover.nf_paths:
+            found = DataMover.find_directory(conn, path, folder_name)
+            if found is not None:
+                return found
+        return None
+
+
+    @staticmethod
     def find_directory(conn, path, folder_name):
         dirs = conn.listPath('NF', path)
         for dir in dirs:
@@ -134,11 +150,10 @@ class DataMover():
                     if found_dir is not None:
                         return found_dir
         return None
-
+    
 
     @staticmethod
     def check_conditions(src_path, foldername, username, password):
-        mzk_path = DataMover.nf_path + foldername
         return_dict = {}
         krom_dir2_path = src_path + '/2'
         if not os.path.exists(krom_dir2_path):
@@ -147,22 +162,32 @@ class DataMover():
             return return_dict
         else:
             return_dict['folder_two'] = True
+        folder_result = DataMover.search_dst_folders(foldername)
+        if folder_result:
+            return_dict['exists_at_mzk'] = True
+        else:
+            return_dict['exists_at_mzk'] = False
+        return return_dict
+    
+    
+    @staticmethod
+    def get_dst_folders():
+        return DataMover.nf_paths
+    
+    
+    @staticmethod
+    def get_mzk_folders(path):
+        directories = []
         conn = DataMover.establish_connection()
-        # Create connection, listPath
-        try:
-            files = conn.listPath('NF', DataMover.nf_path)
-        except Exception as e:
-            current_app.logger.error("Could not list files with listpath method")
-            raise(e)
-        return_dict['exists_at_mzk'] = False
+        files = conn.listPath('NF', path)
         for file in files:
             if file.isDirectory:
-                if foldername == file.filename:
-                    return_dict['exists_at_mzk'] = True
-        return return_dict
-
+                if not re.match('^dig', file.filename, re.I) and not re.match('^kdig', file.filename, re.I):
+                    directories.append(file.filename)
+        return directories
 
     def send_files(self):
+        current_app.logger.debug("Calling send_files")
         try:
             folder = FolderDb(folderName=os.path.split(self.src_path)[1], folderPath=self.src_path)
             db.session.add(folder)
@@ -171,17 +196,16 @@ class DataMover():
             db.session.add(process)
             db.session.commit()
         except Exception as e:
-            current_app.logger.info("Problem with dabatase: ", e)
+            current_app.logger.error("Problem with dabatase: ", e)
             return
         conn = DataMover.establish_connection()
         for folder in process.folders:
             for path, subdirs, files in os.walk(folder.folderPath + '/2'):
                 self.total_directories += len(subdirs)
                 self.total_files += len(files)
-        done_directories = 0
-        done_files = 0
         for folder in process.folders:
-            conn.createDirectory('NF', DataMover.nf_path + folder.folderName)
+            dest_path = self.dst_path + '/' + folder.folderName
+            #conn.createDirectory('NF', dest_path)
             # send to MZK
             # src dir is folder named 2
             src_dir = folder.folderPath + '/2'
@@ -190,15 +214,32 @@ class DataMover():
                     if dir not in [u'.', u'..']:
                         full_dir = os.path.join(path, dir)
                         rel_dir = os.path.relpath(full_dir, src_dir)
-                        current_app.logger.debug("Creating directory: " + DataMover.nf_path + folder.folderName + '/' + rel_file)
-                        conn.createDirectory('NF', DataMover.nf_path + folder.folderName + '/' + rel_dir)
+                        current_app.logger.debug("Creating directory: " + 
+                                                 self.dst_path + '/' + 
+                                                 folder.folderName + '/' + 
+                                                 rel_file)
+                        conn.createDirectory('NF', self.dst_path + '/' + 
+                                             folder.folderName + '/' + 
+                                             rel_dir)
                 for filename in files:
                     file = os.path.join(path, filename)
                     rel_dir = os.path.relpath(path, src_dir)
                     rel_file = os.path.join(rel_dir, filename)
-                    current_app.logger.debug("Transferring to: " + DataMover.nf_path + folder.folderName + '/' + rel_file)
-                    with open(file, 'rb') as local_f:
-                        conn.storeFile('NF', DataMover.nf_path + folder.folderName + '/' + rel_file, local_f)
+                    
+                    storeFile = False
+                    if storeFile:
+                        with open(file, 'rb') as local_f:
+                           conn.storeFile('NF', self.dst_path + '/' + 
+                                          folder.folderName + '/' + 
+                                          rel_file, local_f, show_progress=True)
+                    else:
+                        try:
+                            dst_path = os.path.join('/mnt/MZK/', self.dst_path, folder.folderName, rel_file)
+                            dst_path = os.path.normpath(dst_path)
+                            current_app.logger.debug("Transferring FROM: " + file)
+                            current_app.logger.debug("Transferring TO: " + dst_path)
+                        except Exception as e:
+                            current_app.logger.error(e)
                     #done_files += 1
         conn.close()
         # Change status to SENT

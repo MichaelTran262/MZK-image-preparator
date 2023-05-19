@@ -54,3 +54,8 @@ class LocalDevelopmentConfig(DevelopmentConfig):
         timezone = "Europe/Prague",
         worker_concurrency = 8
     )
+
+config = {
+    'development': LocalDevelopmentConfig(),
+    'production': ProductionConfig()
+}

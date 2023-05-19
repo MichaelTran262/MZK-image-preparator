@@ -59,14 +59,6 @@ def get_process_folders(id):
     })
 
 
-@api.route('/send_to_mzk_now/home/<path:req_path>', methods=['POST'])
-@api.route('/send_to_mzk_now/<path:req_path>', methods=['POST'])
-def api_send_to_mzk_now(req_path):
-    abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
-    r = api_create_process_and_run.delay(abs_path, app.config['SMB_USER'], app.config['SMB_PASSWORD'])
-    return jsonify({"Status" : "ok", "task_id" : r.task_id}), 200
-
-
 # Checks whether file already exists at MZK
 @api.route('/check_folder_conditions/home/<path:req_path>', methods=['GET'])
 @api.route('/check_folder_conditions/<path:req_path>', methods=['GET'])
@@ -76,28 +68,61 @@ def check_if_folder_exists(req_path):
     return DataMover.check_conditions(abs_path, foldername, app.config['SMB_USER'], app.config['SMB_PASSWORD'])
 
 
-@api.route('/send_to_mzk_now/progress/home/<path:req_path>', methods=['GET'])
-@api.route('/send_to_mzk_now/progress/<path:req_path>', methods=['GET'])
+@api.route('/folder/mzk/<folder_name>', methods=['GET'])
+def is_folder_at_mzk(folder_name):
+    result = DataMover.search_dst_folders(folder_name)
+    return jsonify({'folder': folder_name, 'result': result})
+
+
+@api.route('/folder/mzk/progress/home/<path:req_path>', methods=['GET'])
+@api.route('/folder/mzk/progress/<path:req_path>', methods=['GET'])
 def send_to_mzk_progress(req_path):
     abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
     foldername = os.path.split(abs_path)[1]
-    current, total = DataMover.get_folder_progress(folder=abs_path, foldername=foldername, username=app.config['SMB_USER'], password=app.config['SMB_PASSWORD'])
+    current, total = DataMover.get_folder_progress(folder=abs_path, foldername=foldername)
     return jsonify({'current':current, 'total': total}), 200
 
 
-@api.route('/folder/mzk/<folder_name>', methods=['GET'])
-def is_folder_at_mzk(folder_name):
-    conn = DataMover.establish_connection()
-    path = '/MUO/test_tran'
-    result = DataMover.find_directory(conn, path, folder_name)
-    return jsonify({'folder': folder_name, 'result': result})
+@api.route('/folder/mzk/send/home/<path:req_path>', methods=['POST'])
+@api.route('/folder/mzk/send/<path:req_path>', methods=['POST'])
+def api_send_to_mzk(req_path):
+    abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
+    try:
+        dst_path = request.get_json()['dst_folder']
+    except Exception as e:
+        app.logger.error(e)
+    r = api_create_process_and_run.delay(abs_path, dst_path, app.config['SMB_USER'], app.config['SMB_PASSWORD'])
+    return jsonify({"Status" : "ok", "task_id" : r.task_id}), 200
+
 
 @api.route('/mzk/connection', methods=['GET'])
 def get_mzk_connection():
     conn_exists, msg = DataMover.check_connection()
     return jsonify({"connection": conn_exists, "message": msg})
 
+
+@api.route('/mzk/dst-folders/', methods=['GET'])
+def get_mzk_dst_folders():
+    path = request.args.get("path")
+    if path.endswith('..'):
+        path = os.path.abspath(os.path.join(path, os.pardir))
+    if path == '/':
+        path = "/MUO"
+    result = []
+    i = 0
+    for foldername in DataMover.get_mzk_folders(path):
+        if foldername not in [u'.']:
+            dict = {}
+            dict['id'] = "folder" + str(i)
+            dict['text'] = foldername
+            dict['icon'] = 'jstree-folder'
+            result.append(dict)
+            i += 1
+    response = {"current_folder": path ,"folders": result}
+    return jsonify(response)
+
 @shared_task(ignore_results=False, bind=True)
-def api_create_process_and_run(self, src_path, username, password):
-    mover = DataMover(src_path, username, password, self.request.id)
+def api_create_process_and_run(self, src_path, dst_path, username, password):
+    print(src_path, dst_path, username, password)
+    mover = DataMover(src_path, dst_path, username, password, self.request.id)
     mover.move_to_mzk_now()
