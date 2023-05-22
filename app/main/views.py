@@ -7,19 +7,15 @@ import os
 import urllib.parse
 from . import main
 from ..preparator.Preparator import get_folders, get_file_count, prepare_folder, progress, get_folder_size
-from ..preparator.ImageWrapper import ImageWrapper
-from ..dataMover.ProcessWrapper import ProcessWrapper
 from ..dataMover.DataMover import DataMover
-from ..models import ProcessDb, FolderDb
+from ..models import ProcessDb, FolderDb, Image
 #from .. import db
 
-#dataSender = ProcessWrapper(db)
-# Endpointy začínají zde
 
-@main.route('/', defaults={'req_path': ''})
-@main.route('/home', defaults={'req_path': ''})
-@main.route('/home/', defaults={'req_path': ''})
-@main.route('/home/<path:req_path>')
+@main.route('/', defaults={'req_path': ''}, methods=['GET'])
+@main.route('/<path:req_path>:', defaults={'req_path': ''}, methods=['GET'])
+@main.route('/home/', defaults={'req_path': ''}, methods=['GET'])
+@main.route('/home/<path:req_path>', methods=['GET'])
 def index(req_path):
     abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
 
@@ -40,43 +36,11 @@ def index(req_path):
     file_count = get_file_count(abs_path, req_path)
     return render_template('index.html', files=files, file_count=file_count, prev_page='/home'+prev_path)
 
-@main.route('/prepare/<path:req_path>', methods=['POST', 'GET'])
-def prepare(req_path):
-    if request.method == 'POST':
-        message = prepare_folder(app.config['SRC_FOLDER'], app, req_path)
-        abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
-        files = get_folders(abs_path, req_path)
-        file_count = get_file_count(abs_path, req_path)
-        head, tail = os.path.split(req_path)
-        return_path = urllib.parse.quote("/home/" + str(head))
-        if message != '':
-            return render_template('modal.html', 
-                msg=message, 
-                files=files, 
-                file_count=file_count, 
-                return_path=return_path)
-        else:
-            return render_template('modal_success.html', 
-                msg="Konverze probíhá",
-                files=files,
-                file_count=file_count,
-                return_path=return_path)
-    elif request.method == 'GET':
-        converted_file_count, total_files = progress(req_path, app)
-        return jsonify({'converted': converted_file_count, 'total_files': total_files})
-    else:
-        return '', 204
 
-@main.route('/active_proc_count', methods=['GET'])
-def is_running():
-    dict = {}
-    dict['proc_count'] = len(multiprocessing.active_children())
-    return jsonify(dict)
-    
 @main.route('/processes', methods=['GET'])
 def get_processes():
     page = request.args.get('page', 1, type=int)
-    procs = ProcessWrapper.get_processes_by_page(page)
+    procs = ProcessDb.get_processes_by_page(page)
     if procs is None:
         abort(404)
     for proc in procs:
@@ -101,71 +65,10 @@ def get_folder_images(id):
 @main.route('/images', methods=['GET'])
 def get_images():
     page = request.args.get('page', 1, type=int)
-    images = ImageWrapper.get_images_by_page(page)
+    images = Image.get_images_by_page(page)
     if images is None:
         abort(404)
     return render_template('images.html',images=images)
-
-
-@main.route('/active-processes', methods=['GET'])
-def get_active_processes():
-    #global activeSenders
-    #if activeSenders is None:
-        #abort(404)
-    #return jsonify([sender.getJson() for sender in activeSenders.values()])
-    return '', 200
-
-#Chudyho endpointy
-'''
-@main.route('/add_folder/<path:req_path>', methods=['POST'])
-@main.route('/add_folder/home/<path:req_path>', methods=['POST'])
-def add_new_folder(req_path):
-    if request.method == 'POST':
-        abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
-        dirs = {
-            2: abs_path + '/2',
-            3: abs_path + '/3',
-            4: abs_path + '/4'
-        }
-        return jsonify({"status": "ok"})
-    else:
-        return jsonify({"status": "ok"})
-
-@main.route('/remove_folder', methods=['POST'])
-def remove_folder():
-    #global dataSender
-    #dataSender.removeFolder(request.args["folder"])
-    return jsonify({"status": "ok"})
-
-
-@main.route('/send_to_mzk_now/home/<path:req_path>', methods=['POST'])
-@main.route('/send_to_mzk_now/<path:req_path>', methods=['POST'])
-def send_folder(req_path):
-    abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
-    t = threading.Thread(target=create_process_and_run, args=(abs_path, app.config['SMB_USER'], app.config['SMB_PASSWORD'], app._get_current_object()))
-    t.daemon = True
-    t.start()
-    return redirect(url_for('main.get_processes'))
-
-
-@main.route('/send_to_mzk_later/home/<path:req_path>', methods=['POST'])
-@main.route('/send_to_mzk_later/<path:req_path>', methods=['POST'])
-def schedule_send_folder(req_path):
-    abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
-    message = DataMover.move_to_mzk_later(abs_path)
-    files = get_folders(abs_path, req_path)
-    file_count = get_file_count(abs_path, req_path)
-    head, tail = os.path.split(req_path)
-    return_path = urllib.parse.quote("/home/" + str(head))
-    if message != '':
-        return render_template('modal.html', 
-            msg=message, 
-            files=files, 
-            file_count=file_count, 
-            return_path=return_path)
-    else:
-        return redirect(url_for('main.get_processes'))
-'''
 
 
 @main.route('/celery_task/<id>', methods=['GET'])

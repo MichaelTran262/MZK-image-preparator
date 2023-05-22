@@ -5,7 +5,6 @@ from celery import current_app as celery_app
 from celery.result import AsyncResult
 from ..models import ProcessDb
 from ..dataMover.DataMover import DataMover
-from ..dataMover.ProcessWrapper import ProcessWrapper
 from . import api
 import os
 

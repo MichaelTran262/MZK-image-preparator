@@ -1,6 +1,8 @@
 from celery import shared_task
 from celery.result import AsyncResult
 import os
+import grp
+import pwd
 from flask import Flask, request, render_template, url_for, abort, send_file, redirect, request, jsonify
 from flask import current_app
 from .. import models
@@ -61,6 +63,9 @@ def get_folders(path, req_path):
                         tmp['hasDirThree'] = True
                     elif dir.name == '4':
                         tmp['hasDirFour'] = True
+                dir_info = os.stat(tmp_path)
+                tmp['uid'] = dir_info.st_uid
+                tmp['gid'] = dir_info.st_gid
                 #is_folder_at_mzk(tmp['dirname'])
                 #tmp['size'] = get_folder_size(tmp_path)
                 dirs.append(tmp)

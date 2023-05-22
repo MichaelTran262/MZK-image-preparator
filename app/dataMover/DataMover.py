@@ -57,6 +57,8 @@ class DataMover():
         username = str(current_app.config['SMB_USER'])
         password = str(current_app.config['SMB_PASSWORD'])
         ip = str(current_app.config['MZK_IP'])
+        if os.path.exists('/mnt/MZK/MUO'):
+            return True, "MZK is mounted"
         try:
             conn = SMBConnection(username, password, 'krom_app', ip, use_ntlm_v2=True)
         except Exception as e:
@@ -73,6 +75,10 @@ class DataMover():
 
     @staticmethod
     def establish_connection():
+        """
+        Creates an SMBConnection instance and creates a connection to MZK.
+        :returns conn: SMBConnection with active MZK connection.
+        """
         username = str(current_app.config['SMB_USER'])
         password = str(current_app.config['SMB_PASSWORD'])
         ip = str(current_app.config['MZK_IP'])
@@ -92,10 +98,16 @@ class DataMover():
 
     @staticmethod
     def get_folder_progress(folder, foldername):
+        """
+        Gets progress of a given folder. Counts total files in source directory and then counts files
+        already existing in destination directory
+        :param folder: folder e.g. ????
+        :param foldername: foldername e.g. ????
+        """
         dst_folder = DataMover.search_dst_folders(folder_name=foldername)
         mzk_path = os.path.join(dst_folder, foldername)
         return_dict = {}
-        conn = DataMover.establish_connection()
+        #conn = DataMover.establish_connection()
         total_files = 0
         krom_dir2 = folder + '/2'
         for path, subdirs, files in os.walk(krom_dir2):
@@ -112,6 +124,11 @@ class DataMover():
 
     @staticmethod
     def smb_walk(conn, path):
+        """
+        walks through smb directory in given path
+        :param conn: SmbConnection instance connected to SMB share
+        :param path: path which will be walked through e.g. /home/user/dir
+        """
         dirnames = []
         filenames = []
         for file in conn.listPath('NF', path):
@@ -187,7 +204,6 @@ class DataMover():
         return directories
 
     def send_files(self):
-        current_app.logger.debug("Calling send_files")
         try:
             folder = FolderDb(folderName=os.path.split(self.src_path)[1], folderPath=self.src_path)
             db.session.add(folder)
@@ -205,7 +221,9 @@ class DataMover():
                 self.total_files += len(files)
         for folder in process.folders:
             dest_path = self.dst_path + '/' + folder.folderName
-            #conn.createDirectory('NF', dest_path)
+            if os.path.exists(dest_path):
+                return
+            os.makedirs(dest_path)
             # send to MZK
             # src dir is folder named 2
             src_dir = folder.folderPath + '/2'
@@ -234,10 +252,13 @@ class DataMover():
                                           rel_file, local_f, show_progress=True)
                     else:
                         try:
-                            dst_path = os.path.join('/mnt/MZK/', self.dst_path, folder.folderName, rel_file)
-                            dst_path = os.path.normpath(dst_path)
+                            dest_path = "/mnt/MZK/" + self.dst_path
+                            dest_path = os.path.join(dest_path, folder.folderName, rel_file)
+                            current_app.logger.debug("BEFORE normpath: " + dest_path)
+                            dest_path = os.path.normpath(dest_path)
                             current_app.logger.debug("Transferring FROM: " + file)
-                            current_app.logger.debug("Transferring TO: " + dst_path)
+                            current_app.logger.debug("Transferring TO: " + dest_path)
+                            shutil.copy2(file, dest_path)
                         except Exception as e:
                             current_app.logger.error(e)
                     #done_files += 1

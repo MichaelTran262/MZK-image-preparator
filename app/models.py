@@ -47,10 +47,11 @@ class ProcessDb(db.Model):
     def get_folders(id):
         process = ProcessDb.query.get(id)
         return list(process.folders)
-
+    
     @staticmethod
-    def get_sender_processes_by_page(page, process_id):
-        pass
+    def get_processes_by_page(page = 1):
+        procs = ProcessDb.query.order_by(ProcessDb.created.desc()).paginate(page=page, per_page=10)
+        return procs
 
 
 class FolderDb(db.Model):
@@ -101,3 +102,8 @@ class Image(db.Model):
         db.session.add(image)
         db.session.commit()
         return image
+
+    @staticmethod
+    def get_images_by_page(page = 1):
+        images = Image.query.order_by(Image.time_created.desc()).paginate(page=page, per_page=10)
+        return images

@@ -26,7 +26,7 @@
         <tbody id="tableContent">
             {% for file in files %}
                 <tr>
-                    <td><a href="/home/{{ file.dirpath }}"><i class="fa fa-folder-open"></i>{{ file.dirname }}</a></td>
+                    <td><a href="/home/{{ file.dirpath }}" data-toggle="tooltip" title="UID: {{ file.uid }}, GID: {{ file.gid }}"><i class="fa fa-folder-open"></i>{{ file.dirname }}</a></td>
                     <td class="actions">
                       {% if file.hasDirThree or file.hasDirFour %}
                       <button type="button" class="btn btn-primary" style="width: 175px;" disabled>Vytvořeno</button>
