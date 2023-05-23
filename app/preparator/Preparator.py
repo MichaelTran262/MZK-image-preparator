@@ -103,6 +103,7 @@ def get_folder_size(path):
 
 def prepare_folder(base_dir, app, req_path):
     abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
+    uid, gid = 0, 0
     dirs = {
         2: abs_path + '/2',
         3: abs_path + '/3',
@@ -124,18 +125,21 @@ def prepare_folder(base_dir, app, req_path):
         if dir == 2:
             if not os.path.exists(dirs[dir]):
                 return "Chybí složka 2"
+            dir2_info = os.stat(dirs[dir])
+            uid, gid = dir2_info.st_uid, dir2_info.st_gid
         elif dir == 3 or dir == 4:
             if os.path.exists(dirs[dir]):
                 if os.listdir(dirs[dir]):   
                     return "Složka 3 nebo 4 už existuje a není prázdná"
             else:
                 os.makedirs(dirs[dir])
+                os.chown(dirs[dir], uid, gid)
                 os.chmod(dirs[dir], 0o0777)
-    copy_images(dirs[2], dirs)
+    copy_images(dirs[2], dirs, uid, gid)
     return ''
 
 
-def copy_images(src_dir, krom_dirs):
+def copy_images(src_dir, krom_dirs, uid, gid):
     #tif_files = os.listdir(src_dir)
     folder = models.FolderDb.create(folder_name=src_dir, folder_path=src_dir)
     total_files = 0
@@ -148,9 +152,11 @@ def copy_images(src_dir, krom_dirs):
                 full_path = os.path.join(root, dir)
                 dir3 = os.path.join(krom_dirs[3], os.path.relpath(full_path, src_dir))
                 os.makedirs(dir3)
+                os.chown(dir3, uid, gid)
                 os.chmod(dir3, 0o0777)
                 dir4 = os.path.join(krom_dirs[4], os.path.relpath(full_path, src_dir))
                 os.makedirs(dir4)
+                os.chown(dir4, uid, gid)
                 os.chmod(dir4, 0o0777)
         for filename in files:
             if filename.endswith(".tiff") or filename.endswith(".tif"):
@@ -158,7 +164,7 @@ def copy_images(src_dir, krom_dirs):
                 rel_dir = os.path.relpath(root, src_dir)
                 rel_file = os.path.join(rel_dir, filename)
                 try:
-                    convert_image.delay(rel_file, krom_dirs[3], krom_dirs[4], src_file, folder.id)
+                    convert_image.delay(rel_file, krom_dirs[3], krom_dirs[4], src_file, folder.id, uid, gid)
                 except Exception as e:
                     print(e)
                     return
@@ -185,9 +191,16 @@ def progress(req_path, app):
 
 
 @shared_task(ignore_results=False, bind=True)
-def convert_image(self, rel_file, dir3, dir4, src_file, folderId):
+def convert_image(self, rel_file, dir3, dir4, src_file, folder_id, uid, gid):
+    '''
+    Converts Image from tiff to Jpeg in given path
+    :param rel_file: Relative file e.g. ???
+    :param dir3: path for folder 3 e.g. {$DST_PATH}/DIG-XXX/3/konvolut/
+    :param dir4: same as dir3, but for folder 4
+    :param src_file: Source TIFF file to be converted. The file lies in folder 2
+    :param folder
+    '''
     from pyvips import Image
-    # app.logger.info(f'Preparing file {file}')
     # get filename with extension
     try:
         filename = os.path.basename(rel_file)
@@ -201,11 +214,13 @@ def convert_image(self, rel_file, dir3, dir4, src_file, folderId):
         # image3_path = dirs[3] + '/' + jpeg_filename
         image3_path = os.path.join(dir3, jpeg_filename)
         image3.jpegsave(image3_path)
+        os.chown(image3_path, uid, gid)
         os.chmod(image3_path, 0o0777)
         # image4_path = dirs[4] + '/' + jpeg_filename
         image4_path = os.path.join(dir4, jpeg_filename)
         image4.jpegsave(image4_path)
+        os.chown(image4_path, uid, gid)
         os.chmod(image4_path, 0o0777)
-        models.Image.create(filename=jpeg_filename, folderId=folderId, status="Ok", celery_task_id=self.request.id)
+        models.Image.create(filename=jpeg_filename, folderId=folder_id, status="Ok", celery_task_id=self.request.id)
     except Exception as e:
-        models.Image.create(filename=jpeg_filename, folderId=folderId, status="error", celery_task_id=self.request.id)
+        models.Image.create(filename=jpeg_filename, folderId=folder_id, status="error", celery_task_id=self.request.id)
