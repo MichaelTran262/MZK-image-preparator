@@ -12,7 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
-    
+    <script src="{{ url_for('static', filename='js/init.js') }}"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <title>MZK aplikace</title>
     {% block head %}{% endblock %}
@@ -34,6 +34,12 @@
               <a class="nav-link" href="/images">Obrázky<span class="sr-only">(current)</span></a>
             </li>
         </div>
+        <span class="navbar-text" style="margin-right: 10px;">
+           MUO disk <i class="fa fa-circle" id="mountAvailableDot"></i>
+        </span>    
+        <span class="navbar-text">
+           MZK spojení <i class="fa fa-circle" id="connectionDot"></i>
+        </span>
       </nav>
     <div class="container pt-12">
         {% block body %}{% endblock %}

@@ -97,7 +97,8 @@ def api_send_to_mzk(req_path):
 @api.route('/mzk/connection', methods=['GET'])
 def get_mzk_connection():
     conn_exists, msg = DataMover.check_connection()
-    return jsonify({"connection": conn_exists, "message": msg})
+    mount_exists = DataMover.check_mount()
+    return jsonify({"connection": conn_exists, "message": msg, "mount_exists": mount_exists})
 
 
 @api.route('/mzk/dst-folders/', methods=['GET'])

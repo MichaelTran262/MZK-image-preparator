@@ -72,6 +72,10 @@ class DataMover():
             return True, "Connection OK"
         else:
             return False, "Authentication unsuccessfull!"
+        
+    @staticmethod
+    def check_mount():
+        return os.path.ismount('/mnt/MZK')
 
     @staticmethod
     def establish_connection():
@@ -145,13 +149,14 @@ class DataMover():
 
     @staticmethod
     def search_dst_folders(folder_name):
+        # Pysmb Code
         conn = DataMover.establish_connection()
         for path in DataMover.nf_paths:
             found = DataMover.find_directory(conn, path, folder_name)
             if found is not None:
                 return found
         return None
-
+        
 
     @staticmethod
     def find_directory(conn, path, folder_name):
