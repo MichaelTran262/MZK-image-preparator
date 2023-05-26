@@ -42,7 +42,7 @@ class DataMover():
             return
         if conds['exists_at_mzk']:
             return
-        self.send_files()
+        self.send_files_os()
 
     # TODO
     def move_to_mzk_later(self):
@@ -75,7 +75,7 @@ class DataMover():
         
     @staticmethod
     def check_mount():
-        return os.path.ismount('/mnt/MZK')
+        return os.path.ismount('/mnt/MZK') and len(os.listdir('/mnt/MZK')) != 0
 
     @staticmethod
     def establish_connection():
@@ -111,7 +111,7 @@ class DataMover():
         dst_folder = DataMover.search_dst_folders(folder_name=foldername)
         mzk_path = os.path.join(dst_folder, foldername)
         return_dict = {}
-        #conn = DataMover.establish_connection()
+        conn = DataMover.establish_connection()
         total_files = 0
         krom_dir2 = folder + '/2'
         for path, subdirs, files in os.walk(krom_dir2):
@@ -207,8 +207,8 @@ class DataMover():
                 if not re.match('^dig', file.filename, re.I) and not re.match('^kdig', file.filename, re.I):
                     directories.append(file.filename)
         return directories
-
-    def send_files(self):
+    
+    def send_files_os(self):
         try:
             folder = FolderDb(folderName=os.path.split(self.src_path)[1], folderPath=self.src_path)
             db.session.add(folder)
@@ -219,11 +219,63 @@ class DataMover():
         except Exception as e:
             current_app.logger.error("Problem with dabatase: ", e)
             return
-        conn = DataMover.establish_connection()
         for folder in process.folders:
-            for path, subdirs, files in os.walk(folder.folderPath + '/2'):
-                self.total_directories += len(subdirs)
-                self.total_files += len(files)
+            dest_path = self.dst_path + '/' + folder.folderName
+            if os.path.exists(dest_path):
+                return
+            current_app.logger.debug("DEST_PATH: " + dest_path)
+            #os.makedirs(dest_path)
+            # send to MZK
+            # src dir is folder named 2
+            src_dir = folder.folderPath + '/2'
+            return
+            for path, subdirs, files in os.walk(src_dir):
+                for dir in subdirs:
+                    if dir not in [u'.', u'..']:
+                        full_dir = os.path.join(path, dir)
+                        rel_dir = os.path.relpath(full_dir, src_dir)
+                        current_app.logger.debug("Creating directory: " + 
+                                                 self.dst_path + '/' + 
+                                                 folder.folderName + '/' + 
+                                                 rel_file)
+                        
+                for filename in files:
+                    file = os.path.join(path, filename)
+                    rel_dir = os.path.relpath(path, src_dir)
+                    rel_file = os.path.join(rel_dir, filename)
+                    
+                    storeFile = False
+                    if storeFile:
+                        with open(file, 'rb') as local_f:
+                           conn.storeFile('NF', self.dst_path + '/' + 
+                                          folder.folderName + '/' + 
+                                          rel_file, local_f, show_progress=True)
+                    else:
+                        try:
+                            dest_path = "/mnt/MZK/" + self.dst_path
+                            dest_path = os.path.join(dest_path, folder.folderName, rel_file)
+                            current_app.logger.debug("BEFORE normpath: " + dest_path)
+                            dest_path = os.path.normpath(dest_path)
+                            current_app.logger.debug("Transferring FROM: " + file)
+                            current_app.logger.debug("Transferring TO: " + dest_path)
+                            shutil.copy2(file, dest_path)
+                        except Exception as e:
+                            current_app.logger.error(e)
+                    #done_files += 1
+        conn.close()
+        # Change status to SENT
+
+    def send_files_pysmb(self):
+        try:
+            folder = FolderDb(folderName=os.path.split(self.src_path)[1], folderPath=self.src_path)
+            db.session.add(folder)
+            process = ProcessDb(celery_task_id=self.celery_task_id)
+            process.folders.append(folder)
+            db.session.add(process)
+            db.session.commit()
+        except Exception as e:
+            current_app.logger.error("Problem with dabatase: ", e)
+            return
         for folder in process.folders:
             dest_path = self.dst_path + '/' + folder.folderName
             if os.path.exists(dest_path):
