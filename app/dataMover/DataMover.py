@@ -16,6 +16,7 @@ class DataMover():
 
     # Na konci musí být lomitko!!!
     nf_paths = ['/MUO/TIF/', '/MUO/BEZ OCR/', '/MUO/OCR/', '/MUO/K OREZU/', '/MUO/test_tran/']
+    pysmb = False
 
     def __init__(self, src_path, dst_path, user, password, celery_task_id):
         self.dirs = dirs = {
@@ -43,6 +44,7 @@ class DataMover():
         if conds['exists_at_mzk']:
             return
         self.send_files_os()
+
 
     # TODO
     def move_to_mzk_later(self):
@@ -73,9 +75,11 @@ class DataMover():
         else:
             return False, "Authentication unsuccessfull!"
         
+
     @staticmethod
     def check_mount():
         return os.path.ismount('/mnt/MZK') and len(os.listdir('/mnt/MZK')) != 0
+
 
     @staticmethod
     def establish_connection():
@@ -85,6 +89,7 @@ class DataMover():
         """
         username = str(current_app.config['SMB_USER'])
         password = str(current_app.config['SMB_PASSWORD'])
+        #current_app.logger.debug("SMB_USERNAME: " + username + ", SMB_PASSWORD: ***" + password[-2:])
         ip = str(current_app.config['MZK_IP'])
         try:
             conn = SMBConnection(username, password, 'krom_app', ip, use_ntlm_v2=True)
@@ -149,17 +154,34 @@ class DataMover():
 
     @staticmethod
     def search_dst_folders(folder_name):
-        # Pysmb Code
-        conn = DataMover.establish_connection()
-        for path in DataMover.nf_paths:
-            found = DataMover.find_directory(conn, path, folder_name)
-            if found is not None:
-                return found
-        return None
+        if DataMover.pysmb:
+            # Pysmb Code
+            conn = DataMover.establish_connection()
+            for path in DataMover.nf_paths:
+                found = DataMover.find_directory_pysmb(conn, path, folder_name)
+                if found is not None:
+                    return found
+            return None
+        else:
+            # Working with mount
+            if not DataMover.check_mount():
+                current_app.logger.error("MZK disk not available!")
+                return
+            found = DataMover.find_directory_os('/mnt/MZK', folder_name)
+            return found
         
 
     @staticmethod
-    def find_directory(conn, path, folder_name):
+    def find_directory_os(path, folder_name):
+        for path, subdirs, files in os.walk(path):
+            if folder_name in subdirs:
+                print(f"{path}/{folder_name}")
+                return f"{path}/{folder_name}"
+            subdirs[:] = [d for d in subdirs if not re.match('^dig', d, re.I) and not re.match('^kdig', d, re.I) and d != folder_name]
+        return None
+
+    @staticmethod
+    def find_directory_pysmb(conn, path, folder_name):
         dirs = conn.listPath('NF', path)
         for dir in dirs:
             if dir.filename not in [u'.', u'..']:
@@ -168,7 +190,7 @@ class DataMover():
                     return f"{path}/{folder_name}"
                 elif dir.isDirectory:
                     sub_dir_path = f"{path}/{dir.filename}"
-                    found_dir = DataMover.find_directory(conn, sub_dir_path, folder_name)
+                    found_dir = DataMover.find_directory_pysmb(conn, sub_dir_path, folder_name)
                     if found_dir is not None:
                         return found_dir
         return None
@@ -208,6 +230,7 @@ class DataMover():
                     directories.append(file.filename)
         return directories
     
+
     def send_files_os(self):
         try:
             folder = FolderDb(folderName=os.path.split(self.src_path)[1], folderPath=self.src_path)
@@ -228,6 +251,7 @@ class DataMover():
             # send to MZK
             # src dir is folder named 2
             src_dir = folder.folderPath + '/2'
+            current_app.logger.debug("src_dir: " + src_dir)
             return
             for path, subdirs, files in os.walk(src_dir):
                 for dir in subdirs:
@@ -262,8 +286,8 @@ class DataMover():
                         except Exception as e:
                             current_app.logger.error(e)
                     #done_files += 1
-        conn.close()
         # Change status to SENT
+
 
     def send_files_pysmb(self):
         try:

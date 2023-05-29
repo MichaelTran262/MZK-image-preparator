@@ -2,7 +2,7 @@ version: '3'
 
 services:
   mzk-preparator-app:
-    image: michaeltran262/mzk-preparator-app:1.1.5-local
+    image: michaeltran262/mzk-preparator-app:1.1.7-local
     container_name: mzk-preparator-app
     expose:
       - 5000
@@ -10,12 +10,9 @@ services:
       - ./data:/mnt/data
       - ./logs:/logs
       - ./config.py:/preparator/config.py
+    env_file:
+      - .env
     command: "gunicorn -b 0.0.0.0:5000 --chdir /preparator --worker-tmp-dir /dev/shm --workers=1 -k eventlet --log-level debug preparator:flask_app"
-    environment:
-      - FLASK_APP=flask_app.py
-      - FLASK_DEBUG=0
-      - SRC_FOLDER=/mnt/data
-      - DST_FOLDER=/mnt/data
     links:
       - mzk-postgres
     restart: always
@@ -25,34 +22,28 @@ services:
       - celery-worker
     
   celery-worker:
-    image: michaeltran262/mzk-preparator-app:1.1.5-local
+    image: michaeltran262/mzk-preparator-app:1.1.7-local
     volumes:
       - ./data:/mnt/data
       - ./logs:/logs
       - ./config.py:/preparator/config.py
     command: "celery -A preparator:celery_app worker"
-    environment:
-      - FLASK_APP=flask_app.py
-      - FLASK_DEBUG=0
-      - SRC_FOLDER=/mnt/data
-      - DST_FOLDER=/mnt/data
+    env_file:
+      - .env
     links:
       - mzk-postgres
     restart: always
     
   flower:
-    image: michaeltran262/mzk-preparator-app:1.1.5-local
+    image: michaeltran262/mzk-preparator-app:1.1.7-local
     volumes:
       - ./data:/mnt/data
       - ./logs:/logs
       - ./config.py:/preparator/config.py
       - ./flower:/flower
     command: "celery -A preparator:celery_app flower --persistent=True --db=/flower/flower.db --max_tasks=1000"
-    environment:
-      - FLASK_APP=flask_app.py
-      - FLASK_DEBUG=0
-      - SRC_FOLDER=/mnt/data
-      - DST_FOLDER=/mnt/data
+    env_file:
+      - .env
     depends_on:
       - celery-worker
     restart: always
