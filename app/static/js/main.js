@@ -39,6 +39,7 @@ $( document ).ready(function() {
                 } else {
                     text = "Odesláno";
                     $(button).text(text);
+                    $(button).attr('title', data.result);
                 }
                 
             },

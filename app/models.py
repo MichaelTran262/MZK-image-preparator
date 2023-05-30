@@ -21,6 +21,7 @@ class ProcessDb(db.Model):
     stop = db.Column(db.DateTime, default=None, nullable=True)
     # forceful = db.Column(db.Boolean, nullable=True)
     folders = db.relationship('FolderDb', secondary=folder_process, backref='processes')
+    destination = db.Column(db.String, nullable=False)
 
     # __table_args__ = (db.UniqueConstraint('pid', 'stop', name='pid_stop_constaint'),)
 
@@ -34,12 +35,12 @@ class ProcessDb(db.Model):
     def to_json(self):
         return {
             'id': self.id,
+            'celery_task_id': self.celery_task_id,
             'created': self.created,
             'scheduled_for': self.scheduledFor,
             'start': self.start,
             'stop': self.stop,
             'scheduledFor': self.scheduledFor,
-            'processStatus': self.processStatus,
             'folders': url_for('api.get_process_folders', id=self.id)
         }
 
@@ -53,6 +54,18 @@ class ProcessDb(db.Model):
         procs = ProcessDb.query.order_by(ProcessDb.created.desc()).paginate(page=page, per_page=10)
         return procs
 
+    @staticmethod
+    def get_process_destination(id):
+        proc = ProcessDb.query.get(id)
+        return proc.destination
+    
+    @staticmethod
+    def get_process_folders_folderPaths(id):
+        proc = ProcessDb.query.get(id)
+        paths = []
+        for folder in proc.folders:
+            paths.append(folder.folderPath)
+        return paths
 
 class FolderDb(db.Model):
     
@@ -81,6 +94,11 @@ class FolderDb(db.Model):
     def get_images(image_id):
         folder = FolderDb.query.get(image_id)
         return list(folder.images)
+    
+    @staticmethod
+    def get_folder_path(id):
+        folder = FolderDb.query.get(id)
+        return folder.folderPath
 
 
 class Image(db.Model):

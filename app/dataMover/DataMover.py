@@ -78,7 +78,7 @@ class DataMover():
 
     @staticmethod
     def check_mount():
-        return os.path.ismount('/mnt/MZK') and len(os.listdir('/mnt/MZK')) != 0
+        return os.path.ismount('/mnt/MZK/MUO') and len(os.listdir('/mnt/MZK/MUO')) != 0
 
 
     @staticmethod
@@ -106,29 +106,38 @@ class DataMover():
 
 
     @staticmethod
-    def get_folder_progress(folder, foldername):
+    def get_folder_progress(src_path, dst_path):
         """
         Gets progress of a given folder. Counts total files in source directory and then counts files
         already existing in destination directory
         :param folder: folder e.g. ????
         :param foldername: foldername e.g. ????
         """
-        dst_folder = DataMover.search_dst_folders(folder_name=foldername)
-        mzk_path = os.path.join(dst_folder, foldername)
         return_dict = {}
-        conn = DataMover.establish_connection()
         total_files = 0
-        krom_dir2 = folder + '/2'
-        for path, subdirs, files in os.walk(krom_dir2):
+        total_space = DataMover.get_folder_size(src_path)
+        for path, subdirs, files in os.walk(src_path):
             total_files += len(files)
-        transferred = []
+        transferred = 0
+        transferred_space = DataMover.get_folder_size(dst_path)
         try:
-            for path, subdirs, files in DataMover.smb_walk(conn, mzk_path):
-                for name in files:
-                    transferred.append(os.path.join(path, name))
+            for path, subdirs, files in os.walk(dst_path):
+                transferred += len(files)
         except Exception as e:
             return 0, 0
-        return len(transferred), total_files
+        return transferred, total_files, transferred_space, total_space
+    
+    @staticmethod
+    def get_folder_size(path):
+        total_size = 0
+        for dirpath, dirnames, filenames in os.walk(path):
+            for f in filenames:
+                fp = os.path.join(dirpath, f)
+                # skip if it is symbolic link
+                if not os.path.islink(fp):
+                    total_size += os.path.getsize(fp)
+        return total_size/1000000 # in megabytes
+
 
 
     @staticmethod
@@ -167,7 +176,7 @@ class DataMover():
             if not DataMover.check_mount():
                 current_app.logger.error("MZK disk not available!")
                 return
-            found = DataMover.find_directory_os('/mnt/MZK', folder_name)
+            found = DataMover.find_directory_os('/mnt/MZK/MUO', folder_name)
             return found
         
 
@@ -235,7 +244,8 @@ class DataMover():
         try:
             folder = FolderDb(folderName=os.path.split(self.src_path)[1], folderPath=self.src_path)
             db.session.add(folder)
-            process = ProcessDb(celery_task_id=self.celery_task_id)
+            dest = self.dst_path + '/' + folder.folderName
+            process = ProcessDb(celery_task_id=self.celery_task_id, destination=dest)
             process.folders.append(folder)
             db.session.add(process)
             db.session.commit()
@@ -243,50 +253,43 @@ class DataMover():
             current_app.logger.error("Problem with dabatase: ", e)
             return
         for folder in process.folders:
-            dest_path = self.dst_path + '/' + folder.folderName
+            dest_path = '/mnt/MZK' + self.dst_path + '/' + folder.folderName
             if os.path.exists(dest_path):
                 return
-            current_app.logger.debug("DEST_PATH: " + dest_path)
-            #os.makedirs(dest_path)
+            current_app.logger.debug("DEST_PATH: " + dest_path) # je zatim bez predpony /mnt/MZK
+            os.makedirs(dest_path)
             # send to MZK
             # src dir is folder named 2
             src_dir = folder.folderPath + '/2'
-            current_app.logger.debug("src_dir: " + src_dir)
-            return
-            for path, subdirs, files in os.walk(src_dir):
-                for dir in subdirs:
-                    if dir not in [u'.', u'..']:
-                        full_dir = os.path.join(path, dir)
-                        rel_dir = os.path.relpath(full_dir, src_dir)
-                        current_app.logger.debug("Creating directory: " + 
-                                                 self.dst_path + '/' + 
-                                                 folder.folderName + '/' + 
-                                                 rel_file)
-                        
-                for filename in files:
-                    file = os.path.join(path, filename)
-                    rel_dir = os.path.relpath(path, src_dir)
-                    rel_file = os.path.join(rel_dir, filename)
-                    
-                    storeFile = False
-                    if storeFile:
-                        with open(file, 'rb') as local_f:
-                           conn.storeFile('NF', self.dst_path + '/' + 
-                                          folder.folderName + '/' + 
-                                          rel_file, local_f, show_progress=True)
-                    else:
+            #current_app.logger.debug("src_dir: " + src_dir)
+            if os.path.exists(src_dir):
+
+                for path, subdirs, files in os.walk(src_dir):
+                    # Create directories, if it's convolutes
+                    for dir in subdirs:
+                        if dir not in [u'.', u'..']:
+                            full_dir = os.path.join(path, dir)
+                            rel_dir = os.path.relpath(full_dir, src_dir)
+                            current_app.logger.debug("Creating directory: " + 
+                                                    self.dst_path + '/' + 
+                                                    folder.folderName + '/' + 
+                                                    rel_dir)
+                            dst_dir = '/mnt/MZK' + self.dst_path + '/' + folder.folderName + '/' + rel_dir
+                            os.makedirs(dst_dir)
+                            
+                    for filename in files:
+                        file = os.path.join(path, filename)
+                        rel_dir = os.path.relpath(path, src_dir)
+                        rel_file = os.path.join(rel_dir, filename)
                         try:
                             dest_path = "/mnt/MZK/" + self.dst_path
                             dest_path = os.path.join(dest_path, folder.folderName, rel_file)
-                            current_app.logger.debug("BEFORE normpath: " + dest_path)
                             dest_path = os.path.normpath(dest_path)
                             current_app.logger.debug("Transferring FROM: " + file)
                             current_app.logger.debug("Transferring TO: " + dest_path)
                             shutil.copy2(file, dest_path)
                         except Exception as e:
                             current_app.logger.error(e)
-                    #done_files += 1
-        # Change status to SENT
 
 
     def send_files_pysmb(self):
@@ -300,6 +303,7 @@ class DataMover():
         except Exception as e:
             current_app.logger.error("Problem with dabatase: ", e)
             return
+        conn = DataMover.establish_connection()
         for folder in process.folders:
             dest_path = self.dst_path + '/' + folder.folderName
             if os.path.exists(dest_path):

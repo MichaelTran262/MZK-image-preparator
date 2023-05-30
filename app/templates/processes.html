@@ -11,7 +11,7 @@
       <li>FAILURE - Při přenosu se stala chyba</li>
       <li>REVOKED - Přenos byl ručně ukončen během běhu. Již přenesená data se z MZK NEsmažou.</li>
     </ul>
-    <table class="table table-bordered">
+    <table id="processTable" class="table table-bordered">
       <thead>
         <tr>
           <th>ID</th>
@@ -22,28 +22,7 @@
           <th>Akce</th>
         </tr>
       </thead>
-      <tbody>
-        {% for process in processes.items %}
-            <tr id="{{ process.celery_task_id }}">
-                <td>{{ process.id }}</th>
-                <td>{{ process.created }}</td>
-                <td class="border-left">
-                {% if process.state %}
-                  {{ process.state }}
-                {% else %} 
-                  Žádná
-                {% endif %}</td>
-                <td><a href="/celery_task/{{ process.celery_task_id }}">{{ process.celery_task_id }}</a></th>
-                <td><a class="btn btn-primary" role="button" href="{{ url_for('main.get_process_folders', id=process.id) }}">Zobrazit</a></td>
-                {% if process.state == "STARTED" %}
-                <td>
-                  <button type="button" class="cancel-button btn btn-danger">Ukončit</button>
-                </td>
-                {% else %}
-                <td> - </td>
-                {% endif %}
-            </tr>
-        {% endfor %}
+      <tbody id="tableContent">
       </tbody>
     </table>
     <div class="text-right">

@@ -19,10 +19,20 @@ def check_condition(src_path):
         4: src_path + '/4'
     }
     krom_dir2_path = src_path + '/2'
+    # Folder two conditions
     if not os.path.exists(krom_dir2_path):
         return_dict['folder_two'] = False
+        return_dict['folder_two_empty'] = True
+        return_dict['folder_two_has_tiffs'] = False
     else:
         return_dict['folder_two'] = True
+        if os.listdir(krom_dir2_path):
+            return_dict['folder_two_empty'] = False
+            return_dict['folder_two_has_tiffs'] = tiff_files_in_dir(krom_dir2_path)
+        else:
+            return_dict['folder_two_empty'] = True
+            return_dict['folder_two_has_tiffs'] = False
+    # Folder three conditions
     if os.path.exists(krom_dirs[3]):
         if os.listdir(krom_dirs[3]):   
             return_dict['folder_three_empty'] = False
@@ -30,6 +40,7 @@ def check_condition(src_path):
             return_dict['folder_three_empty'] = True
     else:
         return_dict['folder_three_empty'] = True
+    # Folder four conditions
     if os.path.exists(krom_dirs[4]):
         if os.listdir(krom_dirs[4]):   
             return_dict['folder_four_empty'] = False
@@ -39,6 +50,13 @@ def check_condition(src_path):
         return_dict['folder_four_empty'] = True
     return return_dict
 
+
+def tiff_files_in_dir(path):
+    for path, subdirs, files in os.walk(path):
+            for file in files:
+                if file.lower().endswith(('.tiff', '.tif')):
+                    return True
+    return False
 
 def get_folders(path, req_path):
     dirs = []

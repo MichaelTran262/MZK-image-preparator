@@ -5,8 +5,6 @@ $(document).ready(function() {
         url = url.replace(/([^:]\/)\/+/g, "$1");
         send_url = '/api/folder/mzk/send' + path;
         send_url = send_url.replace(/([^:]\/)\/+/g, "$1");
-        progress_url = '/api/folder/mzk/progress' + path;
-        progress_url = progress_url.replace(/([^:]\/)\/+/g, "$1");
         $('#modalMessage').text('Kontroluji NF disk ...');
         $('#modalInfo').modal('show');
         $.ajax({
@@ -31,14 +29,6 @@ $(document).ready(function() {
                 //
                 $('#modalInfo').modal('hide');
                 $('#transferModal').modal('show');
-                /*
-                $('#jstree').bind("dblclick.jstree", function (data) {
-                    let selected_node = $('#jstree').jstree('get_selected', true)[0].text;
-                    let new_path = $('#jstreeCurrentDirectory').text() + '/' + selected_node
-                    new_path = new_path.replace(/([^:]\/)\/+/g, "$1");
-                    //console.log(new_path);
-                    render_jstree(new_path);
-                });*/
 
                 $.ajax({
                     type: "GET",
@@ -96,14 +86,12 @@ $(document).ready(function() {
                     $.ajax({
                         type: "POST",
                         url: send_url,
+                        async: false,
                         data: JSON.stringify(folder),
                         contentType: 'application/json; charset=utf-8',
                         dataType: "json",
                         success: function(result){
-                            $('#jstree').jstree('destroy');
-                            //update_transfer_progress(progress_url);
-                            $('#transferNowButton').hide();
-                            $('#transferLaterButton').hide();
+                            window.location.href = '/processes'
                         }
                     });
                 });
@@ -115,7 +103,16 @@ $(document).ready(function() {
     });
 
     $('#transferModal').on('hidden.bs.modal', function () {
+        $('#modalInfo').modal('hide');
         $('#jstree').jstree('destroy');
+        $('#transferNowButton').show();
+        $('#transferLaterButton').show();
+        $("#transferProgressBar").css("width", "0%");
+        $("#transferProgressNumbered").html("");
+    });
+
+    $('#transferModal').on('shown.bs.modal', function () {
+        $('#modalInfo').modal('hide');
         $('#transferNowButton').show();
         $('#transferLaterButton').show();
         $("#transferProgressBar").css("width", "0%");
@@ -124,33 +121,6 @@ $(document).ready(function() {
 
 });
 // Document ready end
-
-function update_transfer_progress(url) {
-    progressId = setInterval(function() {
-        $.ajax({
-            type: 'GET',
-            url: url,
-            dataType: 'json',
-            success: function(data) {
-                if (data.total == 0) {
-                    return;
-                }
-                if (data.current == data.total) {
-                    console.log("current equals total")
-                    clearInterval(progressId);
-                }
-                let percent = Math.floor((data.current/data.total)*100);
-                let width_style = percent.toString() + "%";
-                let label = data.current + "/" + data.total;
-                $("#transferProgressBar").css("width", width_style);
-                $("#transferProgressNumbered").html(label)
-            },
-            error: function(data) {
-                console.log("update_transfer_progress failed");
-            }
-        });
-    }, 1000);
-}
 
 function render_jstree(root_path) {
     $.ajax({
