@@ -1,2 +1,2 @@
 import pytest
-from preparator import celery_app
+from krom_app import celery_app

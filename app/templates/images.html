@@ -3,7 +3,7 @@
 {% block body %}
 <div class="row p-3">
   <div class="container pt-3">
-    <h2>Záznamy procesů</h2>      
+    <h2>Záznamy obrázků z příprav složek 3 a 4</h2>      
     <table class="table table-bordered">
       <thead>
         <tr>
@@ -19,7 +19,7 @@
             <tr>
                 <td>{{ image.id }}</td>
                 <td>{{ image.filename }}</td>
-                <td class="border-left">{{ image.folder.folderName }}</td>
+                <td class="border-left">{{ image.folder.folder_name }}</td>
                 <td>{{ image.time_created }}</td>
                 <td><a href="/celery_task/{{ image.celery_task_id }}">{{ image.celery_task_id }}</a></td>
             </tr>

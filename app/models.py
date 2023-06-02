@@ -43,6 +43,10 @@ class ProcessDb(db.Model):
             'scheduledFor': self.scheduledFor,
             'folders': url_for('api.get_process_folders', id=self.id)
         }
+    
+    @staticmethod
+    def get_process(id):
+        return ProcessDb.query.get(id)
 
     @staticmethod
     def get_folders(id):
@@ -72,29 +76,34 @@ class FolderDb(db.Model):
     __tablename__ = 'folder'
 
     id = db.Column(db.Integer, primary_key=True)
-    folderName = db.Column(db.String, nullable=False)
-    folderPath = db.Column(db.String, nullable=False)
+    folder_name = db.Column(db.String, nullable=False)
+    folder_Path = db.Column(db.String, nullable=False)
+    dest_path = db.Column(db.String, nullable=True)
     # processes = db.relationship('ProcessDb', secondary=folder_process, backref='folders')
     images = db.relationship('Image', backref='folder')
 
     def __repr__(self):
         return f"Folder(                     \
             id={self.id!r},  \
-            folderName={self.folderName!r},\
-            folderPath={self.folderPath!r}"
-    
+            folder_name={self.folder_name!r},\
+            folder_path={self.folder_path!r} \
+            dest_path={self.dest_path}"
+
+
     @classmethod
     def create(cls, folder_name, folder_path):
-        folder = cls(folderName=folder_name, folderPath=folder_path)
+        folder = cls(folder_name=folder_name, folder_path=folder_path)
         db.session.add(folder)
         db.session.commit()
         return folder
+
 
     @staticmethod
     def get_images(image_id):
         folder = FolderDb.query.get(image_id)
         return list(folder.images)
-    
+
+
     @staticmethod
     def get_folder_path(id):
         folder = FolderDb.query.get(id)

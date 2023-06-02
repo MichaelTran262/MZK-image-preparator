@@ -1,0 +1,29 @@
+{% extends 'base_table.html' %}
+
+{% block body %}
+<div class="row p-3">
+  <div class="container pt-3">
+    <h2>Informace o přenosu</h2>      
+    <table id="processTanů" class="table table-bordered">
+      <tbody>
+        <tr>
+            <th class="border-left">ID</th>
+            <td>{{ proc.id }}</td>
+        </tr>
+        <tr>
+            <th class="border-left">Čas vytvoření</th>
+            <td>{{ proc.created }}</td>
+        </tr>
+        <tr>
+            <th class="border-left">Čas plánovaného přenosu</th>
+            <td>{{ proc.scheduledFor }}</td>
+        </tr>
+        <tr>
+            <th class="border-left">Stav</th>
+            <td>{{ proc.stop }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

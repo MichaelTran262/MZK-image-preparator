@@ -40,7 +40,11 @@ function generate_table() {
                 row += '<td>' + data.procs[i].state + '</td>';
                 row += `<td><a href="/celery_task/${ data.procs[i].celery_task_id }">${ data.procs[i].celery_task_id }</a></td>`
                 row += '<td><a class="btn btn-primary" role="button" href="/get_process_folders/'+ data.procs[i].id + '">Zobrazit</a></td>'
-                row += '<td>-</td>';
+                if(data.procs[i].state == 'STARTED') {
+                    row += '<td><button type="button" class="cancel-button btn btn-danger" disabled>Ukončit</button><a class="btn btn-info" role="button" href="/process/'+ data.procs[i].id + '">Info</a></td>';
+                } else {
+                    row += '<td><a class="btn btn-info" role="button" href="/process/'+ data.procs[i].id + '">Info</a></td>';
+                }
                 content.append("<tr>"+row+"</tr>");
                 if(data.procs[i].state == 'STARTED') {
                     progress = `

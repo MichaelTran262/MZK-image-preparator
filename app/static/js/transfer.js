@@ -7,16 +7,15 @@ $(document).ready(function() {
         send_url = send_url.replace(/([^:]\/)\/+/g, "$1");
         $('#modalMessage').text('Kontroluji NF disk ...');
         $('#modalInfo').modal('show');
+        $('#transferNowButton').prop('disabled', true);
         $.ajax({
             type: 'GET',
-            async: true,
+            async: false,
             url: url,
             dataType: 'json',
             success: function(data) {
-                
                 if (!data.folder_two) {
                     $('#modalMessage').text('Chybí Složka 2!');
-                    $('#modalInfo').modal('show');
                     return;
                 }
                 
@@ -27,7 +26,6 @@ $(document).ready(function() {
                     return;
                 }
                 //
-                $('#modalInfo').modal('hide');
                 $('#transferModal').modal('show');
 
                 $.ajax({
@@ -43,17 +41,6 @@ $(document).ready(function() {
                               'check_callback': true,
                               'multiple': false,
                             },
-                            "types" : {
-                                "default" : {
-                                    "icon" : "fa fa-folder-open"
-                                },
-                                "f-closed" : {
-                                    "icon" : "fa fa-folder-open"
-                                },
-                                "file" : {
-                                    "icon" : "fa fa-file"
-                                }
-                            },
                             "plugins": ["types"]
                         });
                         $('#jstreeCurrentDirectory').text("/MUO")
@@ -68,17 +55,22 @@ $(document).ready(function() {
                     // Fetch and render the contents of the selected folder
                     new_path = $('#jstreeCurrentDirectory').text() + '/' + node.text()
                     new_path = new_path.replace(/([^:]\/)\/+/g, "$1");
-                    console.log(new_path);
+                    $('#transferNowButton').prop('disabled', true);
                     render_jstree(new_path);
                 });
-
                 $('#jstree').on('select_node.jstree', function (e, data) {
-                    console.log("SELECTED: ", data.node.text);
+                    if(data.node.text == '..') {
+                        $('#transferNowButton').prop('disabled', true);
+                    } else {
+                        $('#transferNowButton').prop('disabled', false);
+                    }
                 });
-                
                 //render_jstree('/');
 
                 $('#transferNowButton').on('click', function() {
+                    if($("#jstree").jstree("get_selected", true)[0].text === undefined) {
+                        return
+                    }
                     folder_name = $("#jstree").jstree("get_selected", true)[0].text;
                     folder_path = $('#jstreeCurrentDirectory').text() + '/' + folder_name;
                     folder = new Object();
@@ -151,12 +143,18 @@ function render_jstree(root_path) {
             $('#jstreeCurrentDirectory').text(data.current_folder)
             $('#jstree').on('dblclick.jstree', function(event) {
                 var node = $(event.target).closest('li');
-                
                 // Fetch and render the contents of the selected folder
                 new_path = $('#jstreeCurrentDirectory').text() + '/' + node.text()
                 new_path = new_path.replace(/([^:]\/)\/+/g, "$1");
                 console.log(new_path);
                 render_jstree(new_path);
+            });
+            $('#jstree').on('select_node.jstree', function (e, data) {
+                if(data.node.text == '..') {
+                    $('#transferNowButton').prop('disabled', true);
+                } else {
+                    $('#transferNowButton').prop('disabled', false);
+                }
             });
         },
         error: function(result) {

@@ -5,6 +5,7 @@ postgres-data
 .vscode
 .git
 .idea
+.env
 nginx
 **/__pycache__
 *.pyc

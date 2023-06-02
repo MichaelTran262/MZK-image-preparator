@@ -4,11 +4,11 @@ USER root
 
 RUN apt update
 RUN apt -y install libvips libvips-dev libvips-tools
-RUN mkdir /preparator
+RUN mkdir /krom_app
 
-COPY . /preparator
+COPY . /krom_app
 
-WORKDIR /preparator
+WORKDIR /krom_app
 
 RUN pip install -r requirements.txt
 

@@ -48,6 +48,12 @@ def get_processes():
     return render_template('processes.html', processes=procs)
 
 
+@main.route('/process/<int:id>', methods=['GET'])
+def get_process(id):
+    proc = ProcessDb.get_process(id)
+    return render_template('process.html', proc=proc)
+
+
 @main.route('/get_process_folders/<int:id>', methods=['GET'])
 def get_process_folders(id):
     proc = ProcessDb.query.get(id)
@@ -59,7 +65,7 @@ def get_process_folders(id):
 def get_folder_images(id):
     folder = FolderDb.query.get(id)
     images = FolderDb.get_images(id)
-    return render_template("folder_images.html", folder=folder.folderName, images=images)
+    return render_template("folder_images.html", folder=folder.folder_name, images=images)
 
 
 @main.route('/images', methods=['GET'])

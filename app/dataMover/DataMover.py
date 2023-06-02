@@ -242,9 +242,9 @@ class DataMover():
 
     def send_files_os(self):
         try:
-            folder = FolderDb(folderName=os.path.split(self.src_path)[1], folderPath=self.src_path)
+            folder = FolderDb(folder_name=os.path.split(self.src_path)[1], folderPath=self.src_path)
             db.session.add(folder)
-            dest = self.dst_path + '/' + folder.folderName
+            dest = self.dst_path + '/' + folder.folder_name
             process = ProcessDb(celery_task_id=self.celery_task_id, destination=dest)
             process.folders.append(folder)
             db.session.add(process)
@@ -253,7 +253,7 @@ class DataMover():
             current_app.logger.error("Problem with dabatase: ", e)
             return
         for folder in process.folders:
-            dest_path = '/mnt/MZK' + self.dst_path + '/' + folder.folderName
+            dest_path = '/mnt/MZK' + self.dst_path + '/' + folder.folder_name
             if os.path.exists(dest_path):
                 return
             current_app.logger.debug("DEST_PATH: " + dest_path) # je zatim bez predpony /mnt/MZK
@@ -272,9 +272,9 @@ class DataMover():
                             rel_dir = os.path.relpath(full_dir, src_dir)
                             current_app.logger.debug("Creating directory: " + 
                                                     self.dst_path + '/' + 
-                                                    folder.folderName + '/' + 
+                                                    folder.folder_name + '/' + 
                                                     rel_dir)
-                            dst_dir = '/mnt/MZK' + self.dst_path + '/' + folder.folderName + '/' + rel_dir
+                            dst_dir = '/mnt/MZK' + self.dst_path + '/' + folder.folder_name + '/' + rel_dir
                             os.makedirs(dst_dir)
                             
                     for filename in files:
@@ -283,7 +283,7 @@ class DataMover():
                         rel_file = os.path.join(rel_dir, filename)
                         try:
                             dest_path = "/mnt/MZK/" + self.dst_path
-                            dest_path = os.path.join(dest_path, folder.folderName, rel_file)
+                            dest_path = os.path.join(dest_path, folder.folder_name, rel_file)
                             dest_path = os.path.normpath(dest_path)
                             current_app.logger.debug("Transferring FROM: " + file)
                             current_app.logger.debug("Transferring TO: " + dest_path)
@@ -294,7 +294,7 @@ class DataMover():
 
     def send_files_pysmb(self):
         try:
-            folder = FolderDb(folderName=os.path.split(self.src_path)[1], folderPath=self.src_path)
+            folder = FolderDb(folder_name=os.path.split(self.src_path)[1], folderPath=self.src_path)
             db.session.add(folder)
             process = ProcessDb(celery_task_id=self.celery_task_id)
             process.folders.append(folder)
@@ -305,7 +305,7 @@ class DataMover():
             return
         conn = DataMover.establish_connection()
         for folder in process.folders:
-            dest_path = self.dst_path + '/' + folder.folderName
+            dest_path = self.dst_path + '/' + folder.folder_name
             if os.path.exists(dest_path):
                 return
             os.makedirs(dest_path)
@@ -319,10 +319,10 @@ class DataMover():
                         rel_dir = os.path.relpath(full_dir, src_dir)
                         current_app.logger.debug("Creating directory: " + 
                                                  self.dst_path + '/' + 
-                                                 folder.folderName + '/' + 
+                                                 folder.folder_name + '/' + 
                                                  rel_file)
                         conn.createDirectory('NF', self.dst_path + '/' + 
-                                             folder.folderName + '/' + 
+                                             folder.folder_name + '/' + 
                                              rel_dir)
                 for filename in files:
                     file = os.path.join(path, filename)
@@ -333,12 +333,12 @@ class DataMover():
                     if storeFile:
                         with open(file, 'rb') as local_f:
                            conn.storeFile('NF', self.dst_path + '/' + 
-                                          folder.folderName + '/' + 
+                                          folder.folder_name + '/' + 
                                           rel_file, local_f, show_progress=True)
                     else:
                         try:
                             dest_path = "/mnt/MZK/" + self.dst_path
-                            dest_path = os.path.join(dest_path, folder.folderName, rel_file)
+                            dest_path = os.path.join(dest_path, folder.folder_name, rel_file)
                             current_app.logger.debug("BEFORE normpath: " + dest_path)
                             dest_path = os.path.normpath(dest_path)
                             current_app.logger.debug("Transferring FROM: " + file)
