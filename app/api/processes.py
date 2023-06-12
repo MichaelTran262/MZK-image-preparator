@@ -102,6 +102,7 @@ def send_to_mzk_progress():
     current, total, current_space, total_space = DataMover.get_folder_progress(src_path=src_path, dst_path=dst_path)
     return jsonify({'current_files':current, 'total_files': total, 'current_space': current_space, 'total_space': total_space}), 200
 
+
 # Is it better to send path in json instead of baking the path into endpoint?
 @api.route('/folder/mzk/send/home/<path:req_path>', methods=['POST'])
 @api.route('/folder/mzk/send/<path:req_path>', methods=['POST'])
