@@ -6,9 +6,15 @@ import threading
 from ..preparator.Preparator import check_condition, prepare_folder, progress
 
 
-@api.route('/prepare/check_folder_condition/home/<path:req_path>', methods=['GET', 'POST'])
-@api.route('/prepare/check_folder_condition/<path:req_path>', methods=['GET', 'POST'])
+@api.route('/prepare/conditions/home/<path:req_path>', methods=['GET', 'POST'])
+@api.route('/prepare/conditions/<path:req_path>', methods=['GET', 'POST'])
 def prepare_check_folder_conditions(req_path):
+    """
+    Checks if folder meets these conditions:
+    - 
+    A more detailed description of the endpoint
+    ---
+    """
     abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
     conditions = check_condition(abs_path)
     return conditions, 200

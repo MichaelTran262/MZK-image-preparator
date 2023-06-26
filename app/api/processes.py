@@ -30,7 +30,7 @@ def get_process_api(id):
 
 @api.route('/processes/progress/<int:id>/', methods=['GET'])
 def get_process_progress(id):
-    src_paths = ProcessDb.get_process_folders_folderPaths(id)
+    src_paths = ProcessDb.get_process_folders_folderpaths(id)
     dst_path = '/mnt/MZK' + ProcessDb.get_process_destination(id)
     current = 0
     total = 0
@@ -55,7 +55,13 @@ def get_process_celery_task(id):
 def remove_celery_task(id):
     celery_app.control.revoke(id, terminate=True)
     return jsonify({"message": "Proces přenosu ukončen."})
-    
+
+
+@api.route('/processes/celery/active', methods=['GET'])
+def get_active_tasks():
+    active_tasks = celery_app.control.inspect().active()
+    active_task_length = sum(len(tasks) for tasks in active_tasks.values()) if active_tasks else 0
+    return jsonify({'active': active_task_length})
 
 @api.route('/processes/folders/<int:id>/')
 def get_process_folders(id):
@@ -79,8 +85,8 @@ def get_process_folders(id):
 
 
 # Checks whether file already exists at MZK
-@api.route('/check_folder_conditions/home/<path:req_path>', methods=['GET'])
-@api.route('/check_folder_conditions/<path:req_path>', methods=['GET'])
+@api.route('/folder/mzk/conditions/home/<path:req_path>', methods=['GET'])
+@api.route('/folder/mzk/conditions/<path:req_path>', methods=['GET'])
 def check_if_folder_exists(req_path):
     abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
     foldername = os.path.split(abs_path)[1]

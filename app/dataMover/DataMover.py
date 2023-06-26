@@ -227,9 +227,19 @@ class DataMover():
     def get_dst_folders():
         return DataMover.nf_paths
     
-    
     @staticmethod
     def get_mzk_folders(path):
+        directories = ['..']
+        abs_path = '/mnt/MZK' + path
+        files = os.listdir(abs_path)
+        for file in files:
+            if os.path.isdir(os.path.join(abs_path, file)):
+                if not re.match('^dig', file, re.I) and not re.match('^kdig', file, re.I):
+                    directories.append(file)
+        return directories
+    
+    @staticmethod
+    def get_mzk_folders_pysmb(path):
         directories = []
         conn = DataMover.establish_connection()
         files = conn.listPath('NF', path)
@@ -242,7 +252,7 @@ class DataMover():
 
     def send_files_os(self):
         try:
-            folder = FolderDb(folder_name=os.path.split(self.src_path)[1], folderPath=self.src_path)
+            folder = FolderDb(folder_name=os.path.split(self.src_path)[1], folder_path=self.src_path)
             db.session.add(folder)
             dest = self.dst_path + '/' + folder.folder_name
             process = ProcessDb(celery_task_id=self.celery_task_id, destination=dest)
@@ -250,7 +260,7 @@ class DataMover():
             db.session.add(process)
             db.session.commit()
         except Exception as e:
-            current_app.logger.error("Problem with dabatase: ", e)
+            current_app.logger.error("Problem with database: ", e)
             return
         for folder in process.folders:
             dest_path = '/mnt/MZK' + self.dst_path + '/' + folder.folder_name
@@ -260,7 +270,7 @@ class DataMover():
             os.makedirs(dest_path)
             # send to MZK
             # src dir is folder named 2
-            src_dir = folder.folderPath + '/2'
+            src_dir = folder.folder_path + '/2'
             #current_app.logger.debug("src_dir: " + src_dir)
             if os.path.exists(src_dir):
 
@@ -294,7 +304,7 @@ class DataMover():
 
     def send_files_pysmb(self):
         try:
-            folder = FolderDb(folder_name=os.path.split(self.src_path)[1], folderPath=self.src_path)
+            folder = FolderDb(folder_name=os.path.split(self.src_path)[1], folder_path=self.src_path)
             db.session.add(folder)
             process = ProcessDb(celery_task_id=self.celery_task_id)
             process.folders.append(folder)
@@ -311,7 +321,7 @@ class DataMover():
             os.makedirs(dest_path)
             # send to MZK
             # src dir is folder named 2
-            src_dir = folder.folderPath + '/2'
+            src_dir = folder.folder_path + '/2'
             for path, subdirs, files in os.walk(src_dir):
                 for dir in subdirs:
                     if dir not in [u'.', u'..']:

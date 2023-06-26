@@ -1,7 +1,7 @@
 $(document).ready(function() {
     $('.prepare-button').on('click', function() {
         path = window.location.pathname + '/' + $(this).closest('tr').find('a').text();
-        url = '/api/prepare/check_folder_condition' + path;
+        url = '/api/prepare/conditions' + path;
         url = url.replace(/([^:]\/)\/+/g, "$1");
         prepare_url = '/api/prepare/prepare_folder' + path;
         prepare_url = prepare_url.replace(/([^:]\/)\/+/g, "$1");

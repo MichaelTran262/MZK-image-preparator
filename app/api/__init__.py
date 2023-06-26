@@ -6,4 +6,4 @@ from ..dataMover.DataMover import DataMover
 
 api = Blueprint('api', __name__)
 
-from . import processes, prepare
+from . import processes, prepare, speed

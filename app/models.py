@@ -64,11 +64,11 @@ class ProcessDb(db.Model):
         return proc.destination
     
     @staticmethod
-    def get_process_folders_folderPaths(id):
+    def get_process_folders_folderpaths(id):
         proc = ProcessDb.query.get(id)
         paths = []
         for folder in proc.folders:
-            paths.append(folder.folderPath)
+            paths.append(folder.folder_path)
         return paths
 
 class FolderDb(db.Model):
@@ -77,7 +77,7 @@ class FolderDb(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     folder_name = db.Column(db.String, nullable=False)
-    folder_Path = db.Column(db.String, nullable=False)
+    folder_path = db.Column(db.String, nullable=False)
     dest_path = db.Column(db.String, nullable=True)
     # processes = db.relationship('ProcessDb', secondary=folder_process, backref='folders')
     images = db.relationship('Image', backref='folder')
@@ -107,7 +107,7 @@ class FolderDb(db.Model):
     @staticmethod
     def get_folder_path(id):
         folder = FolderDb.query.get(id)
-        return folder.folderPath
+        return folder.folder_path
 
 
 class Image(db.Model):

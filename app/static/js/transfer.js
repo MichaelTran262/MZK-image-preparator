@@ -1,7 +1,7 @@
 $(document).ready(function() {
     $('.transfer-button').on('click', function() {
         path = window.location.pathname + '/' + $(this).closest('tr').find('a').text();
-        url = '/api/check_folder_conditions' + path;
+        url = '/api/folder/mzk/conditions' + path;
         url = url.replace(/([^:]\/)\/+/g, "$1");
         send_url = '/api/folder/mzk/send' + path;
         send_url = send_url.replace(/([^:]\/)\/+/g, "$1");

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block body %}
+    <button id="speedButton">Změřit rychlost sítě k MZK</button>
+    <p id="speedResult"></p>
+<script>
+    function get_progress() {
+        path = '/api/speedtest';
+    
+        fetch(path)
+            .then(res => res.json())
+            .then(data => {
+                $('#speedResult').html(data.speed + " MB/s");
+                $('#speedButton').prop('disabled', false);
+            });
+    }
+   
+    $(document).ready(function(){
+        $('#speedButton').on('click', function() {
+            $('#speedButton').prop('disabled', true);
+            get_progress()
+        });
+    })
+</script>
+{% endblock %}

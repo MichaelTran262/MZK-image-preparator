@@ -90,6 +90,10 @@ def get_process_celery_task(id):
             "traceback": result.traceback if result.traceback else "Žádný"
         }
     return render_template('celery_task.html', record=dict)
+
+@main.route('/speedtest', methods=['GET'])
+def show_speed_page():
+    return render_template('speed.html')
 #End of endpoints
 
 def check_dir(path):
