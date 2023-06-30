@@ -10,6 +10,7 @@ import time as t
 from datetime import datetime
 from smb.SMBConnection import SMBConnection
 from ..dataMover.DataMover import DataMover
+from ..exceptions.prepare_exceptions import *
 
 def check_condition(src_path):
     return_dict = {}
@@ -186,7 +187,6 @@ def copy_images(src_dir, krom_dirs, uid, gid):
                 except Exception as e:
                     print(e)
                     return
-                #pool.apply_async(cls.convert_image, args=(rel_file, krom_dirs, src_dir, src_file))
 
 
 def progress(req_path, app):
@@ -209,36 +209,50 @@ def progress(req_path, app):
 
 
 @shared_task(ignore_results=False, bind=True)
-def convert_image(self, rel_file, dir3, dir4, src_file, folder_id, uid, gid):
+def convert_image(self, rel_file, src_file, dst_dir3, dst_dir4, folder_id, uid, gid):
     '''
     Converts Image from tiff to Jpeg in given path
-    :param rel_file: Relative file e.g. ???
-    :param dir3: path for folder 3 e.g. {$DST_PATH}/DIG-XXX/3/konvolut/
-    :param dir4: same as dir3, but for folder 4
-    :param src_file: Source TIFF file to be converted. The file lies in folder 2
+    :param rel_file: Relative file from folder 2 e.g. 0001.tif, it can be deeper with konvolut
+    :param dir3: Folder 3 path e.g. {$DST_PATH}/DIG-XXX/3
+    :param dir4: Folder 4 path e.g. {$DST_PATH}/DIG-XXX/3
+    :param src_file: Source TIFF file to be converted. The file lies in folder 2.
     :param folder
     '''
     from pyvips import Image
     # get filename with extension
     try:
-        filename = os.path.basename(rel_file)
-        # print("Converting: ", rel_file)
-        image = Image.new_from_file(src_file)
         image3 = Image.thumbnail(src_file, 1920)
         image4 = Image.thumbnail(src_file, 800)
+    except SourceFileOpeningException as e:
+        current_app.logger.error('Could not open and create image from source file ' + src_file)
+        return
+    try:
+        # Gets last file (for konvolut)
+        filename = os.path.basename(rel_file)
         # get only name of file without extension
         filename = os.path.splitext(rel_file)[0]
         jpeg_filename = filename + ".jpeg"
         # image3_path = dirs[3] + '/' + jpeg_filename
-        image3_path = os.path.join(dir3, jpeg_filename)
+        image3_path = os.path.join(dst_dir3, jpeg_filename)
         image3.jpegsave(image3_path)
-        os.chown(image3_path, uid, gid)
-        os.chmod(image3_path, 0o0777)
         # image4_path = dirs[4] + '/' + jpeg_filename
-        image4_path = os.path.join(dir4, jpeg_filename)
+        image4_path = os.path.join(dst_dir4, jpeg_filename)
         image4.jpegsave(image4_path)
+    except Exception as e:
+        current_app.logger.error("Error in convert_image: Could not create jpeg file")
+    try:
+        os.chown(image3_path, uid, gid)
         os.chown(image4_path, uid, gid)
+    except Exception as e:
+        current_app.logger.error("Error in convert_image: Could not change file ownership")
+    try:
+        os.chmod(image3_path, 0o0777)
         os.chmod(image4_path, 0o0777)
+    except Exception as e:
+        current_app.logger.error("Error in convert_image: Could not change persmissions")
+    try:
         models.Image.create(filename=jpeg_filename, folderId=folder_id, status="Ok", celery_task_id=self.request.id)
     except Exception as e:
+        current_app.logger.error("Error in convert_image: Could not insert Image object to database")
         models.Image.create(filename=jpeg_filename, folderId=folder_id, status="error", celery_task_id=self.request.id)
+        return

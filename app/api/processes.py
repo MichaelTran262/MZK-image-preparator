@@ -18,7 +18,8 @@ def get_processes_api():
         abort(404)
     for proc in procs:
         dict = proc.to_json()
-        dict['state'] = AsyncResult(dict['celery_task_id']).state
+        if dict['celery_task_id']:
+            dict['state'] = AsyncResult(dict['celery_task_id']).state
         result.append(dict)
     return jsonify({'procs': result})
 
@@ -30,13 +31,14 @@ def get_process_api(id):
 
 @api.route('/processes/progress/<int:id>/', methods=['GET'])
 def get_process_progress(id):
-    src_paths = ProcessDb.get_process_folders_folderpaths(id)
-    dst_path = '/mnt/MZK' + ProcessDb.get_process_destination(id)
+    folders = ProcessDb.get_process_folders(id)
     current = 0
     total = 0
-    for src_path in src_paths:
-       current, total, current_space, total_space = DataMover.get_folder_progress(src_path=src_path + '/2', dst_path=dst_path)
-    return jsonify({'src_paths': src_paths, 'dst_path': dst_path, 'current_files':current, 'total_files': total, 'current_space': current_space, 'total_space': total_space})
+    for folder in folders:
+       src_path = folder.folder_path + '/2'
+       dst_path = os.path.join(folder.dst_path, folder.folder_name)
+       current, total, current_space, total_space = DataMover.get_folder_progress(src_path=src_path, dst_path=dst_path)
+    return jsonify({'current_files':current, 'total_files': total, 'current_space': current_space, 'total_space': total_space})
 
 
 @api.route('/processes/celery_task/<id>', methods=['GET'])
@@ -59,9 +61,8 @@ def remove_celery_task(id):
 
 @api.route('/processes/celery/active', methods=['GET'])
 def get_active_tasks():
-    active_tasks = celery_app.control.inspect().active()
-    active_task_length = sum(len(tasks) for tasks in active_tasks.values()) if active_tasks else 0
-    return jsonify({'active': active_task_length})
+    count = DataMover.get_active_count(celery_app)
+    return jsonify({'active': count})
 
 @api.route('/processes/folders/<int:id>/')
 def get_process_folders(id):
@@ -90,7 +91,9 @@ def get_process_folders(id):
 def check_if_folder_exists(req_path):
     abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
     foldername = os.path.split(abs_path)[1]
-    return DataMover.check_conditions(abs_path, foldername, app.config['SMB_USER'], app.config['SMB_PASSWORD'])
+    conditions = DataMover.check_conditions(abs_path, foldername)
+    conditions['active'] = DataMover.get_active_count(celery_app)
+    return conditions
 
 
 @api.route('/folder/mzk/<folder_name>', methods=['GET'])
@@ -119,10 +122,29 @@ def api_send_to_mzk(req_path):
         dst_path = request.get_json()['dst_folder']
     except Exception as e:
         app.logger.error(e)
+        return jsonify({"Status" : "ERROR", "message": "dst_folder is empty or invalid"}), 400
     r = api_create_process_and_run.delay(abs_path, dst_path, app.config['SMB_USER'], app.config['SMB_PASSWORD'])
     src_path = abs_path + '/2' #, "task_id" : r.task_id
     dst_path2 = '/mnt/MZK' + dst_path + '/' + foldername
     return jsonify({"Status" : "ok", "task_id" : r.task_id, "src_path": src_path, "dst_path": dst_path2}), 200
+
+# Is it better to send path in json instead of baking the path into endpoint?
+'''
+TODO: 
+1. Check if there is a process instance with future time
+'''
+@api.route('/folder/mzk/send-later/home/<path:req_path>', methods=['POST'])
+@api.route('/folder/mzk/send-later/<path:req_path>', methods=['POST'])
+def api_send_later_to_mzk(req_path):
+    abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
+    foldername = os.path.split(abs_path)[1]
+    try:
+        dst_path = request.get_json()['dst_folder']
+    except Exception as e:
+        app.logger.error(e)
+        return jsonify({"Status" : "ERROR", "message": "dst_folder is empty or invalid"}), 400
+    r = api_create_process.delay(abs_path, foldername, dst_path)
+    return jsonify({"Status" : "ok"}), 200
 
 
 @api.route('/mzk/connection', methods=['GET'])
@@ -156,4 +178,11 @@ def get_mzk_dst_folders():
 def api_create_process_and_run(self, src_path, dst_path, username, password):
     print(src_path, dst_path, username, password)
     mover = DataMover(src_path, dst_path, username, password, self.request.id)
-    mover.move_to_mzk_now()
+    #mover.move_to_mzk_now()
+
+@shared_task(ignore_results=False, bind=True)
+def api_create_process(self, src_path, foldername, dst_path):
+    print(src_path, foldername, dst_path)
+    username, password = app.config['SMB_USER'], app.config['SMB_PASSWORD']
+    mover = DataMover(src_path=src_path, dst_path=dst_path, username=username, password=password)
+    mover.create_process(foldername, True)

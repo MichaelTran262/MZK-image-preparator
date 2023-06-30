@@ -2,8 +2,11 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask.logging import default_handler
 from celery import Celery, Task
+from celery.schedules import crontab
 import logging
 from config import config, LocalDevelopmentConfig
+from datetime import datetime
+
 
 db = SQLAlchemy()
 
@@ -33,5 +36,11 @@ def celery_init_app(app: Flask) -> Celery:
     celery = Celery(app.name, task_cls=FlaskTask)
     celery.config_from_object(app.config["CELERY"])
     celery.set_default()
+    celery.conf.beat_schedule = {
+        'add-every-minute': {
+        'task': 'app.main.views.flask_task',
+        'schedule': crontab(minute=3),
+        },
+    }
     app.extensions["celery"] = celery
     return celery

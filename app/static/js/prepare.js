@@ -14,7 +14,7 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(data) {
                 if (!data.folder_two) {
-                    $('#modalMessage').text('Chybí Složka s názvem 2!');
+                    $('#modalMessage').text('Chybí složka s názvem 2!');
                     $('#modalInfo').modal('show');
                     return;
                 }
@@ -67,7 +67,7 @@ function update_progress(url) {
                 }
                 let percent = Math.floor((data.current/data.total)*100);
                 let width_style = percent.toString() + "%";
-                let label = data.current + "/" + data.total;
+                let label = data.current + "/" + data.total + " obrázků hotovo";
                 $("#preparationProgressBar").css("width", width_style);
                 $("#preparationProgressNumbered").html(label);
             },

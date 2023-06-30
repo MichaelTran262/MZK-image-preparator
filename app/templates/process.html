@@ -16,11 +16,15 @@
         </tr>
         <tr>
             <th class="border-left">Čas plánovaného přenosu</th>
-            <td>{{ proc.scheduledFor }}</td>
+            <td>{{ proc.scheduled_for }}</td>
         </tr>
         <tr>
             <th class="border-left">Stav</th>
             <td>{{ proc.stop }}</td>
+        </tr>
+        <tr>
+            <th class="border-left">UUID</th>
+            <td><a href="/celery_task/{{ proc.celery_task_id }}">{{ proc.celery_task_id }}</a></td>
         </tr>
       </tbody>
     </table>

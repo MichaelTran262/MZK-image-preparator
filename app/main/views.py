@@ -1,6 +1,8 @@
 from flask import Flask, render_template, abort, request, jsonify, redirect, url_for
 from flask import current_app as app
+from celery import shared_task
 from celery.result import AsyncResult
+from celery.schedules import crontab
 import multiprocessing
 import threading
 import os
@@ -44,7 +46,8 @@ def get_processes():
     if procs is None:
         abort(404)
     for proc in procs:
-        proc.state = AsyncResult(proc.celery_task_id).state
+        if proc.celery_task_id:
+            proc.state = AsyncResult(proc.celery_task_id).state
     return render_template('processes.html', processes=procs)
 
 
@@ -100,6 +103,14 @@ def check_dir(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
-def create_process_and_run(src_path, username, password, app):
-    mover = DataMover(src_path, username, password)
-    mover.move_to_mzk_now(app)
+@shared_task(ignore_results=False, bind=True)
+def flask_task(self):
+    planned_process = ProcessDb.get_planned_process()
+    if not planned_process:
+        print("No planned process")
+    else:
+        print("Found planned process")
+        ProcessDb.set_celery_task_id(planned_process.id, self.request.id)
+        ProcessDb.set_process_to_started(planned_process.id)
+        mover = DataMover()
+        mover.move_to_mzk_now(process=planned_process)

@@ -1,48 +1,60 @@
 from flask import current_app, url_for
 from datetime import datetime
 from . import db
+import enum
+import json
 
 folder_process = db.Table('folder_process',
                           db.Column("folder_id", db.Integer, db.ForeignKey('folder.id')),
                           db.Column("process_id", db.Integer, db.ForeignKey('process.id'))
                           )
 
+class ProcessStatesEnum(enum.Enum):
+    PENDING = 'PENDING'
+    STARTED = 'STARTED'
+    SUCCESS = 'SUCCESS'
+    FAILURE = 'FAILURE'
+    REVOKED = 'REVOKED'
 
 class ProcessDb(db.Model):
 
     __tablename__ = 'process'
 
     id = db.Column(db.Integer, primary_key=True)
-    # globalId = db.Column(db.String(40), nullable=True)
     created = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    celery_task_id = db.Column(db.String, nullable=False)
-    scheduledFor = db.Column(db.DateTime, default=None, nullable=True)
+    celery_task_id = db.Column(db.String, nullable=True)
+    planned = db.Column(db.Boolean, nullable=False)
+    status = db.Column(db.Enum(ProcessStatesEnum), nullable=False)
     start = db.Column(db.DateTime, default=None, nullable=True)
     stop = db.Column(db.DateTime, default=None, nullable=True)
-    # forceful = db.Column(db.Boolean, nullable=True)
     folders = db.relationship('FolderDb', secondary=folder_process, backref='processes')
-    destination = db.Column(db.String, nullable=False)
-
-    # __table_args__ = (db.UniqueConstraint('pid', 'stop', name='pid_stop_constaint'),)
 
     def __repr__(self):
-        return f"Process(                          \
-            start={self.start},               \
-            stop={self.stop}                  \
-            scheduledFor={self.scheduledFor}  \
-            processStatus={self.processStatus!r}"
+        return f"Process(\
+            id={self.id}, \
+            created={self.created}, \
+            planned={self.planned}, \
+            start={self.start}, \
+            stop={self.stop}, \
+            status={str(self.status)}, \
+            folders={self.folders})"
+            
 
     def to_json(self):
         return {
             'id': self.id,
-            'celery_task_id': self.celery_task_id,
             'created': self.created,
-            'scheduled_for': self.scheduledFor,
+            'celery_task_id': self.celery_task_id,
+            'planned': self.planned,
+            'status': str(self.status),
             'start': self.start,
             'stop': self.stop,
-            'scheduledFor': self.scheduledFor,
             'folders': url_for('api.get_process_folders', id=self.id)
         }
+    
+    def add_folder(self, folder):
+        self.folders.append(folder)
+        db.session.commit()
     
     @staticmethod
     def get_process(id):
@@ -57,19 +69,40 @@ class ProcessDb(db.Model):
     def get_processes_by_page(page = 1):
         procs = ProcessDb.query.order_by(ProcessDb.created.desc()).paginate(page=page, per_page=10)
         return procs
-
-    @staticmethod
-    def get_process_destination(id):
-        proc = ProcessDb.query.get(id)
-        return proc.destination
     
     @staticmethod
-    def get_process_folders_folderpaths(id):
+    def get_process_folders(id):
         proc = ProcessDb.query.get(id)
-        paths = []
-        for folder in proc.folders:
-            paths.append(folder.folder_path)
-        return paths
+        return proc.folders
+    
+    @staticmethod
+    def get_planned_process():
+        proc = ProcessDb.query.filter(ProcessDb.status == ProcessStatesEnum.PENDING).first()
+        return proc
+    
+    @staticmethod 
+    def set_process_to_started(id):
+        proc = ProcessDb.query.get(id)
+        proc.status = ProcessStatesEnum.STARTED
+        db.session.commit()
+    
+    @staticmethod
+    def set_process_to_failure(id):
+        proc = ProcessDb.query.get(id)
+        proc.status = ProcessStatesEnum.FAILURE
+        db.session.commit()
+
+    @staticmethod
+    def set_process_to_success(id):
+        proc = ProcessDb.query.get(id)
+        proc.status = ProcessStatesEnum.SUCCESS
+        db.session.commit()
+
+    @staticmethod
+    def set_celery_task_id(id, celery_id):
+        proc = ProcessDb.query.get(id)
+        proc.celery_task_id = celery_id
+        db.session.commit()
 
 class FolderDb(db.Model):
     
@@ -78,7 +111,7 @@ class FolderDb(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     folder_name = db.Column(db.String, nullable=False)
     folder_path = db.Column(db.String, nullable=False)
-    dest_path = db.Column(db.String, nullable=True)
+    dst_path = db.Column(db.String, nullable=True)
     # processes = db.relationship('ProcessDb', secondary=folder_process, backref='folders')
     images = db.relationship('Image', backref='folder')
 
@@ -87,7 +120,7 @@ class FolderDb(db.Model):
             id={self.id!r},  \
             folder_name={self.folder_name!r},\
             folder_path={self.folder_path!r} \
-            dest_path={self.dest_path}"
+            dst_path={self.dst_path}"
 
 
     @classmethod

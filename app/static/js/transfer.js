@@ -1,76 +1,95 @@
-$(document).ready(function() {
-    $('.transfer-button').on('click', function() {
+$(document).ready(function () {
+    $('.transfer-button').on('click', function () {
+        $('#modalMessage').text('Kontroluji podmínky a MZK disk ...');
+        $('#modalInfo').modal('show');
         path = window.location.pathname + '/' + $(this).closest('tr').find('a').text();
         url = '/api/folder/mzk/conditions' + path;
         url = url.replace(/([^:]\/)\/+/g, "$1");
-        send_url = '/api/folder/mzk/send' + path;
-        send_url = send_url.replace(/([^:]\/)\/+/g, "$1");
-        $('#modalMessage').text('Kontroluji NF disk ...');
-        $('#modalInfo').modal('show');
-        $('#transferNowButton').prop('disabled', true);
+        // Check conditions and if conds are met, show modal with jstree
         $.ajax({
             type: 'GET',
-            async: false,
+            async: true,
             url: url,
             dataType: 'json',
-            success: function(data) {
-                if (!data.folder_two) {
-                    $('#modalMessage').text('Chybí Složka 2!');
+            success: function (data) {
+
+                if (!data.mzk_connection) {
+                    $('#modalMessage').text('Nelze se spojit z MZK sítí! Kontaktujte správce.')
                     return;
                 }
-                
+
+                if (!data.mzk_mount) {
+                    $('#modalMessage').text('Disk MZK není připojen k aplikaci! Kontaktujte správce MZK disku.')
+                    return;
+                }
+
+                if (!data.folder_two) {
+                    $('#modalMessage').text('Chybí složka 2!');
+                    return;
+                }
+
+                if (data.active > 2) {
+                    $('#modalMessage').text('Již běží dva jiné přenosy!');
+                    return;
+                }
+
                 if (data.exists_at_mzk) {
                     // Handle missing results case
                     $('#modalMessage').text('Složka s daným názvem se již nachází v MZK!');
                     $('#modalInfo').modal('show');
                     return;
                 }
+
                 //
                 $('#transferModal').modal('show');
 
                 $.ajax({
                     type: "GET",
                     url: "/api/mzk/dst-folders",
-                    data: {path: '/'},
+                    data: { path: '/' },
                     dataType: "json",
                     async: false,
-                    success: function(data) {
+                    success: function (data) {
                         $('#jstree').jstree({
                             'core': {
-                              'data': data.folders,
-                              'check_callback': true,
-                              'multiple': false,
+                                'data': data.folders,
+                                'check_callback': true,
+                                'multiple': false,
                             },
                             "plugins": ["types"]
                         });
                         $('#jstreeCurrentDirectory').text("/MUO")
                     },
-                    error: function(result) {
+                    error: function (result) {
                         console.log(result);
                     }
                 })
-                $('#jstree').on('dblclick.jstree', function(event) {
+                $('#jstree').on('dblclick.jstree', function (event) {
                     var node = $(event.target).closest('li');
-                    
                     // Fetch and render the contents of the selected folder
                     new_path = $('#jstreeCurrentDirectory').text() + '/' + node.text()
                     new_path = new_path.replace(/([^:]\/)\/+/g, "$1");
                     $('#transferNowButton').prop('disabled', true);
+                    $('#transferLaterButton').prop('disabled', true);
                     render_jstree(new_path);
                 });
                 $('#jstree').on('select_node.jstree', function (e, data) {
-                    if(data.node.text == '..') {
+                    if (data.node.text == '..') {
                         $('#transferNowButton').prop('disabled', true);
+                        $('#transferLaterButton').prop('disabled', true);
                     } else {
                         $('#transferNowButton').prop('disabled', false);
+                        $('#transferLaterButton').prop('disabled', false);
                     }
                 });
                 //render_jstree('/');
-
-                $('#transferNowButton').on('click', function() {
-                    if($("#jstree").jstree("get_selected", true)[0].text === undefined) {
+                // Transfer Now button
+                $('#transferNowButton').on('click', function () {
+                    if ($("#jstree").jstree("get_selected", true)[0].text === undefined) {
                         return
                     }
+                    send_url = '/api/folder/mzk/send' + path;
+                    send_url = send_url.replace(/([^:]\/)\/+/g, "$1");
                     folder_name = $("#jstree").jstree("get_selected", true)[0].text;
                     folder_path = $('#jstreeCurrentDirectory').text() + '/' + folder_name;
                     folder = new Object();
@@ -82,13 +101,37 @@ $(document).ready(function() {
                         data: JSON.stringify(folder),
                         contentType: 'application/json; charset=utf-8',
                         dataType: "json",
-                        success: function(result){
+                        success: function (result) {
+                            window.location.href = '/processes'
+                        }
+                    });
+                });
+                // Transfer later Button
+                $('#transferLaterButton').on('click', function () {
+                    if ($("#jstree").jstree("get_selected", true)[0].text === undefined) {
+                        return
+                    }
+                    send_url = '/api/folder/mzk/send-later' + path;
+                    send_url = send_url.replace(/([^:]\/)\/+/g, "$1");
+                    folder_name = $("#jstree").jstree("get_selected", true)[0].text;
+                    folder_path = $('#jstreeCurrentDirectory').text() + '/' + folder_name;
+                    folder = new Object();
+                    folder["dst_folder"] = folder_path;
+                    console.log(send_url);
+                    $.ajax({
+                        type: "POST",
+                        url: send_url,
+                        async: false,
+                        data: JSON.stringify(folder),
+                        contentType: 'application/json; charset=utf-8',
+                        dataType: "json",
+                        success: function (result) {
                             window.location.href = '/processes'
                         }
                     });
                 });
             },
-            error: function(data) {
+            error: function (data) {
                 console.log("WTF");
             }
         });
@@ -111,6 +154,8 @@ $(document).ready(function() {
         $("#transferProgressNumbered").html("");
     });
 
+
+    // --- Sekce transfer later --- //
 });
 // Document ready end
 
@@ -118,10 +163,10 @@ function render_jstree(root_path) {
     $.ajax({
         type: "GET",
         url: "/api/mzk/dst-folders",
-        data: {path: root_path},
+        data: { path: root_path },
         dataType: "json",
         async: false,
-        success: function(data) {
+        success: function (data) {
             console.log(data.folders);
             $('#jstree').jstree('destroy');
             $('#jstree').jstree({
@@ -130,34 +175,37 @@ function render_jstree(root_path) {
                     'check_callback': true,
                     'multiple': false,
                 },
-                "types" : {
-                    "default" : {
-                        "icon" : "fa fa-folder text-warning"
+                "types": {
+                    "default": {
+                        "icon": "fa fa-folder text-warning"
                     },
-                    "file" : {
-                        "icon" : "fa fa-file  text-warning"
+                    "file": {
+                        "icon": "fa fa-file  text-warning"
                     }
                 },
                 "plugins": ["types"]
             });
             $('#jstreeCurrentDirectory').text(data.current_folder)
-            $('#jstree').on('dblclick.jstree', function(event) {
+            $('#jstree').on('dblclick.jstree', function (event) {
                 var node = $(event.target).closest('li');
                 // Fetch and render the contents of the selected folder
                 new_path = $('#jstreeCurrentDirectory').text() + '/' + node.text()
                 new_path = new_path.replace(/([^:]\/)\/+/g, "$1");
-                console.log(new_path);
+                $('#transferNowButton').prop('disabled', true);
+                $('#transferLaterButton').prop('disabled', true);
                 render_jstree(new_path);
             });
             $('#jstree').on('select_node.jstree', function (e, data) {
-                if(data.node.text == '..') {
+                if (data.node.text == '..') {
                     $('#transferNowButton').prop('disabled', true);
+                    $('#transferLaterButton').prop('disabled', true);
                 } else {
                     $('#transferNowButton').prop('disabled', false);
+                    $('#transferLaterButton').prop('disabled', false);
                 }
             });
         },
-        error: function(result) {
+        error: function (result) {
             console.log(result);
         }
     })
