@@ -3,8 +3,9 @@ from flask import current_app as app
 from celery import shared_task
 from celery import current_app as celery_app
 from celery.result import AsyncResult
-from ..models import ProcessDb
+from ..models import FolderDb, ProcessDb, ProcessStatesEnum
 from ..dataMover.DataMover import DataMover
+from ..exceptions.prepare_exceptions import TransferException
 from . import api
 import os
 
@@ -146,6 +147,23 @@ def api_send_later_to_mzk(req_path):
     r = api_create_process.delay(abs_path, foldername, dst_path)
     return jsonify({"Status" : "ok"}), 200
 
+'''
+Check conditions for planned process folder
+'''
+@api.route('/folder/mzk/send-later/conditions/home/<path:req_path>', methods=['GET'])
+@api.route('/folder/mzk/send-later/conditions/<path:req_path>', methods=['GET'])
+def api_send_later_conditions(req_path):
+    abs_path = os.path.join(app.config['SRC_FOLDER'], req_path)
+    foldername = os.path.split(abs_path)[1]
+    proc = ProcessDb.get_planned_process()
+    if proc:
+        for proc_folder in proc.folders:
+            app.logger.debug("Process " + str(proc.id) + " has folder with path " + proc_folder.folder_name)
+            if foldername == proc_folder.folder_name:
+                return jsonify({"exists_in_process": True})
+    return jsonify({"exists_in_process": False})
+    
+
 
 @api.route('/mzk/connection', methods=['GET'])
 def get_mzk_connection():
@@ -176,9 +194,16 @@ def get_mzk_dst_folders():
 
 @shared_task(ignore_results=False, bind=True)
 def api_create_process_and_run(self, src_path, dst_path, username, password):
-    print(src_path, dst_path, username, password)
     mover = DataMover(src_path, dst_path, username, password, self.request.id)
-    #mover.move_to_mzk_now()
+    foldername = os.path.split(src_path)[1]
+    #folder = FolderDb(folder_name=foldername, folder_path=src_path, dst_path=dst_path)
+    #db.session.add()
+    #proc = ProcessDb(planned=False, status=ProcessStatesEnum.PENDING)
+    mover = DataMover(src_path=src_path, dst_path=dst_path, username=username, password=password)
+    process = mover.create_process(foldername=foldername, planned=False)
+    ProcessDb.set_celery_task_id(process.id, self.request.id)
+    ProcessDb.set_process_to_started(process.id)
+    mover.move_to_mzk_now(process=process)
 
 @shared_task(ignore_results=False, bind=True)
 def api_create_process(self, src_path, foldername, dst_path):

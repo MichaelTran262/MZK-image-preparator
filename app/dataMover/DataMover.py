@@ -29,35 +29,30 @@ class DataMover():
         self.celery_task_id = celery_task_id
 
 
-    # sends only one path
-    def move_to_mzk_now(self, process):
-        for folder in process.folders:
-            conds = DataMover.check_conditions(folder.folder_path, folder.folder_name)
-            if not conds['folder_two']:
-                ProcessDb.set_process_to_failure(process.id)
-                raise TransferException(folder.folder_name + " does not have folder 2")
-                return
-            if conds['exists_at_mzk']:
-                ProcessDb.set_process_to_failure(process.id)
-                raise TransferException(folder.folder_name + " exists in MZK")
-            try:
-                self.send_files_os(folder)
-            except Exception as e:
-                ProcessDb.set_process_to_failure(process.id)
-                raise TransferException(e)
-        ProcessDb.set_process_to_success(process.id)
-                
-
     def create_process(self, foldername, planned):
         abs_path = self.src_path
         dst_path = self.dst_path
         proc = ProcessDb.get_planned_process()
-        if proc:
-            folder = FolderDb(folder_name=foldername, folder_path=abs_path, dst_path=dst_path)
-            ProcessDb.add_folder(proc, folder)
-            print("Planned Process already exists")
+        if planned:
+            if proc:
+                folder = FolderDb(folder_name=foldername, folder_path=abs_path, dst_path=dst_path)
+                ProcessDb.add_folder(proc, folder)
+                current_app.logger.debug("Planned Process already exists")
+                return proc
+            else:
+                current_app.logger.debug("Planned process does not exist")
+                try:
+                    folder = FolderDb(folder_name=foldername, folder_path=abs_path, dst_path=dst_path)
+                    db.session.add(folder)
+                    process = ProcessDb(planned=planned, status=ProcessStatesEnum.PENDING)
+                    process.folders.append(folder)
+                    db.session.add(process)
+                    db.session.commit()
+                except Exception as e:
+                    current_app.logger.error("Problem with database: ", e)
+                    raise TransferException("Problem with database: " + e)
+                return process
         else:
-            print("Does not exist")
             try:
                 folder = FolderDb(folder_name=foldername, folder_path=abs_path, dst_path=dst_path)
                 db.session.add(folder)
@@ -68,7 +63,32 @@ class DataMover():
             except Exception as e:
                 current_app.logger.error("Problem with database: ", e)
                 raise TransferException("Problem with database: " + e)
+            return process
+
+    # sends only one path
+    def move_to_mzk_now(self, process):
+        for folder in process.folders:
+            try:
+                FolderDb.set_start(folder.id)
+            except Exception as e:
+                ProcessDb.set_process_to_failure(process.id)
+                raise TransferException(e)
+            conds = DataMover.check_conditions(folder.folder_path, folder.folder_name)
+            if not conds['folder_two']:
+                ProcessDb.set_process_to_failure(process.id)
+                raise TransferException(folder.folder_name + " does not have folder 2")
                 return
+            if conds['exists_at_mzk']:
+                ProcessDb.set_process_to_failure(process.id)
+                raise TransferException(folder.folder_name + " exists in MZK")
+            try:
+                self.send_files_os(folder)
+                FolderDb.set_end(folder.id)
+            except Exception as e:
+                ProcessDb.set_process_to_failure(process.id)
+                raise TransferException(e)
+        ProcessDb.set_process_to_success(process.id)
+                
             
     def send_files_os(self, folder):
         dst_path = '/mnt/MZK' + folder.dst_path + '/' + folder.folder_name
@@ -76,7 +96,7 @@ class DataMover():
             current_app.logger.error("DEST PATH ALREADY EXISTS")
             return
         current_app.logger.debug("DEST_PATH: " + dst_path) # je zatim bez predpony /mnt/MZK
-        #os.makedirs(dst_path, exist_ok=True)
+        os.makedirs(dst_path, exist_ok=True)
         # send to MZK
         # src dir is folder named 2
         src_dir = folder.folder_path + '/2'
@@ -98,15 +118,11 @@ class DataMover():
                     file = os.path.join(path, filename)
                     rel_dir = os.path.relpath(path, src_dir)
                     rel_file = os.path.join(rel_dir, filename)
-                    try:
-                        dst_file = os.path.join(dst_path, rel_file)
-                        dst_file = os.path.normpath(dst_file)
-                        current_app.logger.debug("Transferring FROM: " + file)
-                        current_app.logger.debug("Transferring TO: " + dst_file)
-                        t.sleep(0.3)
-                        #shutil.copy2(file, dst_file)
-                    except Exception as e:
-                        current_app.logger.error(e)
+                    dst_file = os.path.join(dst_path, rel_file)
+                    dst_file = os.path.normpath(dst_file)
+                    current_app.logger.debug("Transferring FROM: " + file)
+                    current_app.logger.debug("Transferring TO: " + dst_file)
+                    shutil.copy2(file, dst_file)
 
     @staticmethod
     def get_active_count(celery_app):
@@ -167,12 +183,14 @@ class DataMover():
 
     @staticmethod
     def get_folder_progress(src_path, dst_path):
+        current_app.logger.error(dst_path)
         """
         Gets progress of a given folder. Counts total files in source directory and then counts files
         already existing in destination directory
         :param folder: folder e.g. ????
         :param foldername: foldername e.g. ????
         """
+        dst_path = '/mnt/MZK' + dst_path
         return_dict = {}
         total_files = 0
         total_space = DataMover.get_folder_size(src_path)

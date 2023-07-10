@@ -51,17 +51,20 @@ function generate_table() {
                 if (data.procs[i].planned == false) {
                     row += `<td>Ne</td>`
                 } else {
-                    row += `<td>Ano</td>`
+                    if (data.procs[i].status == 'ProcessStatesEnum.PENDING') {
+                        row += `<td>Ano, na pátek večer</td>`
+                    } else {
+                        row += `<td>Ano</td>`
+                    }
                 }
-                
                 if (data.procs[i].status == 'ProcessStatesEnum.STARTED') {
-                    row += '<td>Probíhá</td>';
+                    row += '<td>Probíhá <i class="fa fa-circle-o-notch fa-spin"></i></td>';
                 } else if (data.procs[i].status == 'ProcessStatesEnum.SUCCESS') {
-                    row += '<td>Úspěch</td>';
+                    row += '<td>Úspěch <i class="fa fa-check" style="color:green;"></i></td>';
                 } else if (data.procs[i].status == 'ProcessStatesEnum.FAILURE') {
-                    row += '<td>CHYBA</td>';
+                    row += '<td>CHYBA <i class="fa fa-exclamation-circle" style="color:red;"></i></td>';
                 } else if (data.procs[i].status == 'ProcessStatesEnum.REVOKED') {
-                    row += '<td>Zrušen</td>';
+                    row += '<td>Zrušen <i class="fa fa-times" style="color:red;"></i></td>';
                 } else if (data.procs[i].status == 'ProcessStatesEnum.PENDING'){
                     row += '<td>Naplánován</td>';
                 } else {

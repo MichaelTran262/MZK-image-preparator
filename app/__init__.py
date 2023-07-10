@@ -39,7 +39,9 @@ def celery_init_app(app: Flask) -> Celery:
     celery.conf.beat_schedule = {
         'add-every-minute': {
         'task': 'app.main.views.flask_task',
-        'schedule': crontab(minute=3),
+        'schedule': crontab(minute=0, 
+                            hour=22,
+                            day_of_week='sun'),
         },
     }
     app.extensions["celery"] = celery

@@ -85,50 +85,67 @@ $(document).ready(function () {
                 //render_jstree('/');
                 // Transfer Now button
                 $('#transferNowButton').on('click', function () {
-                    if ($("#jstree").jstree("get_selected", true)[0].text === undefined) {
-                        return
-                    }
-                    send_url = '/api/folder/mzk/send' + path;
-                    send_url = send_url.replace(/([^:]\/)\/+/g, "$1");
-                    folder_name = $("#jstree").jstree("get_selected", true)[0].text;
-                    folder_path = $('#jstreeCurrentDirectory').text() + '/' + folder_name;
-                    folder = new Object();
-                    folder["dst_folder"] = folder_path;
-                    $.ajax({
-                        type: "POST",
-                        url: send_url,
-                        async: false,
-                        data: JSON.stringify(folder),
-                        contentType: 'application/json; charset=utf-8',
-                        dataType: "json",
-                        success: function (result) {
-                            window.location.href = '/processes'
+                    if (confirm("Chcete opravdu složku poslat ihned?") == true) {
+                        if ($("#jstree").jstree("get_selected", true)[0].text === undefined) {
+                            return
                         }
-                    });
+                        send_url = '/api/folder/mzk/send' + path;
+                        send_url = send_url.replace(/([^:]\/)\/+/g, "$1");
+                        folder_name = $("#jstree").jstree("get_selected", true)[0].text;
+                        folder_path = $('#jstreeCurrentDirectory').text() + '/' + folder_name;
+                        folder = new Object();
+                        folder["dst_folder"] = folder_path;
+                        $.ajax({
+                            type: "POST",
+                            url: send_url,
+                            async: false,
+                            data: JSON.stringify(folder),
+                            contentType: 'application/json; charset=utf-8',
+                            dataType: "json",
+                            success: function (result) {
+                                window.location.href = '/processes'
+                            }
+                        });
+                    }
                 });
                 // Transfer later Button
                 $('#transferLaterButton').on('click', function () {
-                    if ($("#jstree").jstree("get_selected", true)[0].text === undefined) {
-                        return
-                    }
-                    send_url = '/api/folder/mzk/send-later' + path;
-                    send_url = send_url.replace(/([^:]\/)\/+/g, "$1");
-                    folder_name = $("#jstree").jstree("get_selected", true)[0].text;
-                    folder_path = $('#jstreeCurrentDirectory').text() + '/' + folder_name;
-                    folder = new Object();
-                    folder["dst_folder"] = folder_path;
-                    console.log(send_url);
-                    $.ajax({
-                        type: "POST",
-                        url: send_url,
-                        async: false,
-                        data: JSON.stringify(folder),
-                        contentType: 'application/json; charset=utf-8',
-                        dataType: "json",
-                        success: function (result) {
-                            window.location.href = '/processes'
+                    if (confirm("Chcete opravdu složku poslat později tento pátek večer? \n(Složka bude přidána do fronty)") == true) {
+                        if ($("#jstree").jstree("get_selected", true)[0].text === undefined) {
+                            return
                         }
-                    });
+                        path = path.replace(/([^:]\/)\/+/g, "$1");
+                        send_url = '/api/folder/mzk/send-later' + path;
+                        folder_name = $("#jstree").jstree("get_selected", true)[0].text;
+                        folder_path = $('#jstreeCurrentDirectory').text() + '/' + folder_name;
+                        folder = new Object();
+                        folder["dst_folder"] = folder_path;
+                        $.ajax({
+                            type: "GET",
+                            url: '/api/folder/mzk/send-later/conditions' + path,
+                            async: true,
+                            data: JSON.stringify(folder),
+                            contentType: 'application/json; charset=utf-8',
+                            dataType: "json",
+                            success: function (result) {
+                                if(!result.exists_in_process) {
+                                    $.ajax({
+                                        type: "POST",
+                                        url: send_url,
+                                        async: false,
+                                        data: JSON.stringify(folder),
+                                        contentType: 'application/json; charset=utf-8',
+                                        dataType: "json",
+                                        success: function (result) {
+                                            window.location.href = '/processes'
+                                        }
+                                    });
+                                } else {
+                                    alert("Složka je již naplánovaná");
+                                }
+                            }
+                        });
+                    }
                 });
             },
             error: function (data) {

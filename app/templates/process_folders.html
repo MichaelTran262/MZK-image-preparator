@@ -9,6 +9,9 @@
         <tr>
           <th>Jméno složky</th>
           <th>cesta</th>
+          <th>Cílová složka</th>
+          <th>Start</th>
+          <th>Konec</th>
         </tr>
       </thead>
       <tbody>
@@ -16,6 +19,9 @@
             <tr>
                 <td class="border-left">{{ folder.folder_name }}</td>
                 <td>{{ folder.folder_path }}</td>
+                <td>{{ folder.dst_path }}</td>
+                <td>{{ folder.start }}</td>
+                <td>{{ folder.end }}</td>
             </tr>
         {% endfor %}
       </tbody>

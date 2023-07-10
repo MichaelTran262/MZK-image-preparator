@@ -77,7 +77,7 @@ class ProcessDb(db.Model):
     
     @staticmethod
     def get_planned_process():
-        proc = ProcessDb.query.filter(ProcessDb.status == ProcessStatesEnum.PENDING).first()
+        proc = ProcessDb.query.filter(ProcessDb.status == ProcessStatesEnum.PENDING and ProcessDb.planned==True).first()
         return proc
     
     @staticmethod 
@@ -113,6 +113,8 @@ class FolderDb(db.Model):
     folder_path = db.Column(db.String, nullable=False)
     dst_path = db.Column(db.String, nullable=True)
     # processes = db.relationship('ProcessDb', secondary=folder_process, backref='folders')
+    start = db.Column(db.DateTime, default=None, nullable=True)
+    end = db.Column(db.DateTime, default=None, nullable=True)
     images = db.relationship('Image', backref='folder')
 
     def __repr__(self):
@@ -141,6 +143,20 @@ class FolderDb(db.Model):
     def get_folder_path(id):
         folder = FolderDb.query.get(id)
         return folder.folder_path
+    
+
+    @staticmethod
+    def set_start(id):
+        folder = FolderDb.query.get(id)
+        folder.start = datetime.utcnow()
+        db.session.commit()
+    
+
+    @staticmethod
+    def set_end(id):
+        folder = FolderDb.query.get(id)
+        folder.end = datetime.utcnow()
+        db.session.commit()
 
 
 class Image(db.Model):
