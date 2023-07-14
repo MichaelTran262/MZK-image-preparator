@@ -1,17 +1,12 @@
-from flask import Flask, render_template, abort, request, jsonify, redirect, url_for
+from flask import render_template, abort, request
 from flask import current_app as app
 from celery import shared_task
 from celery.result import AsyncResult
-from celery.schedules import crontab
-import multiprocessing
-import threading
-import os
-import urllib.parse
 from . import main
-from ..preparator.Preparator import get_folders, get_file_count, prepare_folder, progress, get_folder_size
+from ..preparator.Preparator import get_folders, get_file_count
 from ..dataMover.DataMover import DataMover
 from ..models import ProcessDb, FolderDb, Image
-#from .. import db
+import os
 
 
 @main.route('/', defaults={'req_path': ''}, methods=['GET'])
@@ -103,8 +98,13 @@ def check_dir(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
+# IMPORTANT
 @shared_task(ignore_results=False, bind=True)
 def flask_task(self):
+    """
+    - Task that looks for a planned process (should ALWAYS be just one)
+    - Then it sets to start and moves the folders
+    """
     planned_process = ProcessDb.get_planned_process()
     if not planned_process:
         print("No planned process")

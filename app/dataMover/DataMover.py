@@ -1,23 +1,16 @@
 from .. import db
 from flask import current_app
 from ..models import FolderDb, ProcessDb, ProcessStatesEnum
-from ..exceptions.prepare_exceptions import TransferException
-import os
-import multiprocessing
-import threading
-import time as t
-import shutil
-import re
-from datetime import datetime, timedelta
-from apscheduler.schedulers.background import BackgroundScheduler
+from ..exceptions.exceptions import TransferException
 from smb.SMBConnection import SMBConnection
+import os
+import re
+import shutil
+import time as t
 
 
 class DataMover():
 
-    # Na konci musí být lomitko!!!
-    nf_paths = ['/MUO/TIF/', '/MUO/BEZ OCR/', '/MUO/OCR/', '/MUO/K OREZU/', '/MUO/test_tran/']
-    pysmb = False
 
     def __init__(self, src_path=None, dst_path=None, username=None, password=None, celery_task_id=None):
         self.src_path = src_path
@@ -65,7 +58,7 @@ class DataMover():
                 raise TransferException("Problem with database: " + e)
             return process
 
-    # sends only one path
+
     def move_to_mzk_now(self, process):
         for folder in process.folders:
             try:
@@ -77,7 +70,6 @@ class DataMover():
             if not conds['folder_two']:
                 ProcessDb.set_process_to_failure(process.id)
                 raise TransferException(folder.folder_name + " does not have folder 2")
-                return
             if conds['exists_at_mzk']:
                 ProcessDb.set_process_to_failure(process.id)
                 raise TransferException(folder.folder_name + " exists in MZK")
@@ -94,8 +86,8 @@ class DataMover():
         dst_path = '/mnt/MZK' + folder.dst_path + '/' + folder.folder_name
         if os.path.exists(dst_path):
             current_app.logger.error("DEST PATH ALREADY EXISTS")
-            return
-        current_app.logger.debug("DEST_PATH: " + dst_path) # je zatim bez predpony /mnt/MZK
+            raise TransferException(dst_path + " already exists!")
+        #current_app.logger.debug("DEST_PATH: " + dst_path) # je zatim bez predpony /mnt/MZK
         os.makedirs(dst_path, exist_ok=True)
         # send to MZK
         # src dir is folder named 2
@@ -104,7 +96,7 @@ class DataMover():
         if os.path.exists(src_dir):
 
             for path, subdirs, files in os.walk(src_dir):
-                # Create directories, if it's convolutes
+                # Create directories (for convolutes)
                 for dir in subdirs:
                     if dir not in [u'.', u'..']:
                         full_dir = os.path.join(path, dir)
@@ -112,7 +104,7 @@ class DataMover():
                         dst_dir = dst_path + '/' + rel_dir
                         current_app.logger.debug("Creating directory: " + 
                                                 dst_dir)
-                        #os.makedirs(dst_dir, exist_ok=True)
+                        os.makedirs(dst_dir, exist_ok=True)
                         
                 for filename in files:
                     file = os.path.join(path, filename)
@@ -124,11 +116,13 @@ class DataMover():
                     current_app.logger.debug("Transferring TO: " + dst_file)
                     shutil.copy2(file, dst_file)
 
+
     @staticmethod
     def get_active_count(celery_app):
         active_tasks = celery_app.control.inspect().active()
         active_task_length = sum(len(tasks) for tasks in active_tasks.values()) if active_tasks else 0
         return active_task_length
+
 
     @staticmethod
     def check_connection():
@@ -205,6 +199,7 @@ class DataMover():
             return 0, 0
         return transferred, total_files, transferred_space, total_space
     
+
     @staticmethod
     def get_folder_size(path):
         total_size = 0
@@ -215,7 +210,6 @@ class DataMover():
                 if not os.path.islink(fp):
                     total_size += os.path.getsize(fp)
         return total_size/1000000 # in megabytes
-
 
 
     @staticmethod
@@ -241,45 +235,25 @@ class DataMover():
 
     @staticmethod
     def search_dst_folders(folder_name):
-        if DataMover.pysmb:
-            # Pysmb Code
-            conn = DataMover.establish_connection()
-            for path in DataMover.nf_paths:
-                found = DataMover.find_directory_pysmb(conn, path, folder_name)
-                if found is not None:
-                    return found
-            return None
-        else:
-            # Working with mount
-            if not DataMover.check_mount():
-                current_app.logger.error("MZK disk not available!")
-                return
-            found = DataMover.find_directory_os('/mnt/MZK/MUO', folder_name)
-            return found
+        '''
+        Lists 
+        '''
+        # Working with mount
+        if not DataMover.check_mount():
+            current_app.logger.error("MZK disk not available!")
+            return
+        found = DataMover.find_directory_os('/mnt/MZK/MUO', folder_name)
+        return found
         
 
     @staticmethod
     def find_directory_os(path, folder_name):
         for path, subdirs, files in os.walk(path):
-            if folder_name in subdirs:
-                print(f"{path}/{folder_name}")
-                return f"{path}/{folder_name}"
-            subdirs[:] = [d for d in subdirs if not re.match('^dig', d, re.I) and not re.match('^kdig', d, re.I) and d != folder_name]
-        return None
-
-    @staticmethod
-    def find_directory_pysmb(conn, path, folder_name):
-        dirs = conn.listPath('NF', path)
-        for dir in dirs:
-            if dir.filename not in [u'.', u'..']:
-                #print(dir.filename)
-                if dir.isDirectory and dir.filename == folder_name:
+            for dir in subdirs:
+                if folder_name.lower() == dir.lower():
+                    print(f"{path}/{folder_name}")
                     return f"{path}/{folder_name}"
-                elif dir.isDirectory:
-                    sub_dir_path = f"{path}/{dir.filename}"
-                    found_dir = DataMover.find_directory_pysmb(conn, sub_dir_path, folder_name)
-                    if found_dir is not None:
-                        return found_dir
+            subdirs[:] = [d for d in subdirs if not re.match('^dig', d, re.I) and not re.match('^kdig', d, re.I) and d.lower() != folder_name.lower()]
         return None
     
 
@@ -287,7 +261,6 @@ class DataMover():
     def check_conditions(src_path, foldername):
         return_dict = {}
         krom_dir2_path = src_path + '/2'
-        print("krom_dir2: " + krom_dir2_path)
         if DataMover.check_connection():
             return_dict['mzk_connection'] = True
         else:
@@ -309,11 +282,7 @@ class DataMover():
             return_dict['exists_at_mzk'] = False
         return return_dict
     
-    
-    @staticmethod
-    def get_dst_folders():
-        return DataMover.nf_paths
-    
+
     @staticmethod
     def get_mzk_folders(path):
         directories = ['..']
@@ -324,6 +293,7 @@ class DataMover():
                 if not re.match('^dig', file, re.I) and not re.match('^kdig', file, re.I):
                     directories.append(file)
         return directories
+    
     
     @staticmethod
     def get_mzk_folders_pysmb(path):

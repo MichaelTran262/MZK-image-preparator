@@ -1,10 +1,8 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from flask.logging import default_handler
 from celery import Celery, Task
 from celery.schedules import crontab
-import logging
-from config import config, LocalDevelopmentConfig
+from config import config
 from datetime import datetime
 
 
@@ -39,9 +37,7 @@ def celery_init_app(app: Flask) -> Celery:
     celery.conf.beat_schedule = {
         'add-every-minute': {
         'task': 'app.main.views.flask_task',
-        'schedule': crontab(minute=0, 
-                            hour=22,
-                            day_of_week='sun'),
+        'schedule': crontab(minute='*/1'),
         },
     }
     app.extensions["celery"] = celery

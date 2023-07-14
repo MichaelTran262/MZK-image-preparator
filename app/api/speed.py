@@ -1,5 +1,5 @@
-from flask import jsonify, request
-from flask import current_app as app
+from flask import jsonify
+from flask import current_app as flask_app
 import subprocess
 from . import api
 
@@ -27,6 +27,5 @@ def disk_speed():
         result = subprocess.run(delete_cmd, shell=True, capture_output=True, text=True, check=True)
         speed = speed_line.split()[-2]
         return jsonify(speed=speed)
-
     except Exception as e:
         return jsonify(error=str(e))

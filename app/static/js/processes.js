@@ -89,7 +89,7 @@ function generate_table() {
                     </tr>`;
                     content.append(progress); 
                     id = data.procs[i].id;
-                    url = '/api/processes/progress/' + id;
+                    url = '/api/processes/progress/' + id + '/';
                     $.ajax({
                         type: 'GET',
                         url: url,

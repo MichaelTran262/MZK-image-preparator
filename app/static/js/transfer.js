@@ -45,7 +45,7 @@ $(document).ready(function () {
 
                 $.ajax({
                     type: "GET",
-                    url: "/api/mzk/dst-folders",
+                    url: "/api/mzk/dst-folders/",
                     data: { path: '/' },
                     dataType: "json",
                     async: false,

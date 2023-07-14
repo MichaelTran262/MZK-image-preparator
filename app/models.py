@@ -80,6 +80,14 @@ class ProcessDb(db.Model):
         proc = ProcessDb.query.filter(ProcessDb.status == ProcessStatesEnum.PENDING and ProcessDb.planned==True).first()
         return proc
     
+    @staticmethod
+    def is_planned_running():
+        proc = ProcessDb.query.filter(ProcessDb.status == ProcessStatesEnum.STARTED and ProcessDb.planned==True).first()
+        if proc:
+            return True
+        else:
+            return False
+    
     @staticmethod 
     def set_process_to_started(id):
         proc = ProcessDb.query.get(id)

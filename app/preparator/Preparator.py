@@ -1,16 +1,12 @@
 from celery import shared_task
 from celery.result import AsyncResult
-import os
-import grp
-import pwd
-from flask import Flask, request, render_template, url_for, abort, send_file, redirect, request, jsonify
 from flask import current_app
 from .. import models
+from ..exceptions.exceptions import PrepareException
 import time as t
-from datetime import datetime
-from smb.SMBConnection import SMBConnection
-from ..dataMover.DataMover import DataMover
-from ..exceptions.prepare_exceptions import *
+import os
+import re
+
 
 def check_condition(src_path):
     return_dict = {}
@@ -85,6 +81,10 @@ def get_folders(path, req_path):
                 dir_info = os.stat(tmp_path)
                 tmp['uid'] = dir_info.st_uid
                 tmp['gid'] = dir_info.st_gid
+                if re.match('^dig', tmp['dirname'], re.I) or re.match('^kdig', tmp['dirname'], re.I):
+                    tmp['valid_name'] = True
+                else:
+                    tmp['valid_name'] = False
                 #is_folder_at_mzk(tmp['dirname'])
                 #tmp['size'] = get_folder_size(tmp_path)
                 dirs.append(tmp)
@@ -183,7 +183,7 @@ def copy_images(src_dir, krom_dirs, uid, gid):
                 rel_dir = os.path.relpath(root, src_dir)
                 rel_file = os.path.join(rel_dir, filename)
                 try:
-                    convert_image.delay(rel_file, krom_dirs[3], krom_dirs[4], src_file, folder.id, uid, gid)
+                    convert_image.delay(rel_file, src_file, krom_dirs[3], krom_dirs[4], folder.id, uid, gid)
                 except Exception as e:
                     print(e)
                     return
@@ -223,9 +223,9 @@ def convert_image(self, rel_file, src_file, dst_dir3, dst_dir4, folder_id, uid, 
     try:
         image3 = Image.thumbnail(src_file, 1920)
         image4 = Image.thumbnail(src_file, 800)
-    except SourceFileOpeningException as e:
+    except Exception as e:
         current_app.logger.error('Could not open and create image from source file ' + src_file)
-        return
+        raise PrepareException('Could not open and create image from source file \n', e)
     try:
         # Gets last file (for konvolut)
         filename = os.path.basename(rel_file)
@@ -240,19 +240,22 @@ def convert_image(self, rel_file, src_file, dst_dir3, dst_dir4, folder_id, uid, 
         image4.jpegsave(image4_path)
     except Exception as e:
         current_app.logger.error("Error in convert_image: Could not create jpeg file")
+        raise PrepareException('Error in convert_image: Could not create jpeg file\n', e)
     try:
         os.chown(image3_path, uid, gid)
         os.chown(image4_path, uid, gid)
     except Exception as e:
         current_app.logger.error("Error in convert_image: Could not change file ownership")
+        raise PrepareException('Error in convert_image: Could not change file ownership\n', e)
     try:
         os.chmod(image3_path, 0o0777)
         os.chmod(image4_path, 0o0777)
     except Exception as e:
         current_app.logger.error("Error in convert_image: Could not change persmissions")
+        raise PrepareException('Error in convert_image: Could not change persmissions\n', e)
     try:
         models.Image.create(filename=jpeg_filename, folderId=folder_id, status="Ok", celery_task_id=self.request.id)
     except Exception as e:
         current_app.logger.error("Error in convert_image: Could not insert Image object to database")
         models.Image.create(filename=jpeg_filename, folderId=folder_id, status="error", celery_task_id=self.request.id)
-        return
+        raise PrepareException('Error in convert_image: Could not insert Image object to database\n', e)

@@ -33,9 +33,11 @@
                       {% else %}
                       <button type="button" class="prepare-button btn btn-primary" style="width: 175px;">Připravit složky 3 a 4</button>
                       {% endif %}
-                      <button type="button" class="transfer-button btn btn-info" style="margin-left: 30px; width: 160px;" disabled>
-                        <div class="spinner-border spinner-border-sm" ></div>
+                      {% if file.valid_name %}
+                      <button type="button" class="transfer-button btn btn-info" style="margin-left: 30px; width: 160px;">
+                        Odeslat do MZK
                       </button>
+                      {% endif %}
                     </td>
                 </tr>
             {% endfor %}

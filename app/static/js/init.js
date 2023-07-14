@@ -7,11 +7,14 @@ function get_connection_status() {
                 $('#connectionDot').css("color", "green");
             } else {
                 $('#connectionDot').css("color", "red");
+                $('.transfer-button').prop('title', '');
             }
             if(data.mount_exists) {
                 $('#mountAvailableDot').css("color", "green");
             } else {
                 $('#mountAvailableDot').css("color", "red");
+                $('.transfer-button').attr('disabled', true);
+                $('.transfer-button').prop('title', 'MZK disk není připojen.');
             }
         })
 }
@@ -25,7 +28,6 @@ function get_active_processes() {
 }
 
 $( document ).ready(function() {
-    
     get_connection_status();
     setInterval(get_connection_status, 10000);
 });
