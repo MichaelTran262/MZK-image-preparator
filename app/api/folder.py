@@ -40,7 +40,14 @@ def send_to_mzk_progress():
     dst_path = request.args.get('dst_path', default=None)
     if not src_path or not dst_path:
         return jsonify({'message': 'Error: src_path or dst_path is empty'})
-    current, total, current_space, total_space = DataMover.get_folder_progress(src_path=src_path, dst_path=dst_path)
+    total = 0
+    try:
+        for path, subdirs, files in os.walk(dst_path):
+            total += len(files)
+    except Exception as e:
+        return 0, 0
+    total_space = DataMover.get_folder_size(src_path)
+    current, current_space = DataMover.get_folder_progress(dst_path=dst_path)
     return jsonify({'current_files':current, 'total_files': total, 'current_space': current_space, 'total_space': total_space}), 200
 
 

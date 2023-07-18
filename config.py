@@ -1,6 +1,7 @@
 import os
 import configparser
 from dotenv import load_dotenv
+from celery.schedules import crontab
 
 PROJECT_DIR = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(PROJECT_DIR, '.env'))
@@ -29,7 +30,13 @@ class ProductionConfig(Config):
         result_backend = f"db+postgresql://{DB_USER}:{DB_PASSWORD}@{DB_SERVER}/mzkdata",
         task_track_started = True,
         timezone = "Europe/Prague",
-        worker_concurrency = 8
+        worker_concurrency = 8,
+        beat_schedule = {
+            'add-every-minute': {
+            'task': 'app.main.views.flask_task',
+            'schedule': crontab(minute=0, hour=20, day_of_week='friday'),
+            }
+        }
     )
 
 class TestProductionConfig(Config):
@@ -47,7 +54,13 @@ class TestProductionConfig(Config):
         result_backend = f"db+postgresql://{DB_USER}:{DB_PASSWORD}@{DB_SERVER}/mzkdata",
         task_track_started = True,
         timezone = "Europe/Prague",
-        worker_concurrency = 8
+        worker_concurrency = 8,
+        beat_schedule = {
+            'add-every-minute': {
+            'task': 'app.main.views.flask_task',
+            'schedule': crontab(minute=0, hour=19, day_of_week='tuesday'),
+            }
+        }
     )
 
 
@@ -59,6 +72,7 @@ class DevelopmentConfig(Config):
     SMB_PASSWORD = os.environ.get('SMB_PASSWORD')
     DB_USER = 'postgres'
     DB_PASSWORD = 'password'
+    
 
 
 class LocalDevelopmentConfig(DevelopmentConfig):
@@ -71,7 +85,13 @@ class LocalDevelopmentConfig(DevelopmentConfig):
         result_backend = f"db+postgresql://{DevelopmentConfig.DB_USER}:{DevelopmentConfig.DB_PASSWORD}@{DB_SERVER}/mzkdata",
         task_track_started = True,
         timezone = "Europe/Prague",
-        worker_concurrency = 8
+        worker_concurrency = 8,
+        beat_schedule = {
+            'add-every-minute': {
+            'task': 'app.main.views.flask_task',
+            'schedule': crontab(minute='*/1'),
+            }
+        }
     )
 
 config = {

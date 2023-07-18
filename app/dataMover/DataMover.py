@@ -43,7 +43,7 @@ class DataMover():
                     db.session.commit()
                 except Exception as e:
                     current_app.logger.error("Problem with database: ", e)
-                    raise TransferException("Problem with database: " + e)
+                    raise TransferException("Problem with database: ", e)
                 return process
         else:
             try:
@@ -55,12 +55,17 @@ class DataMover():
                 db.session.commit()
             except Exception as e:
                 current_app.logger.error("Problem with database: ", e)
-                raise TransferException("Problem with database: " + e)
+                raise TransferException("Problem with database: ", e)
             return process
 
 
     def move_to_mzk_now(self, process):
         for folder in process.folders:
+            try:
+                FolderDb.set_size(folder.id)
+            except:
+                ProcessDb.set_process_to_failure(process.id)
+                raise TransferException(e)
             try:
                 FolderDb.set_start(folder.id)
             except Exception as e:
@@ -176,8 +181,7 @@ class DataMover():
 
 
     @staticmethod
-    def get_folder_progress(src_path, dst_path):
-        current_app.logger.error(dst_path)
+    def get_folder_progress(dst_path):
         """
         Gets progress of a given folder. Counts total files in source directory and then counts files
         already existing in destination directory
@@ -185,19 +189,14 @@ class DataMover():
         :param foldername: foldername e.g. ????
         """
         dst_path = '/mnt/MZK' + dst_path
-        return_dict = {}
-        total_files = 0
-        total_space = DataMover.get_folder_size(src_path)
-        for path, subdirs, files in os.walk(src_path):
-            total_files += len(files)
         transferred = 0
-        transferred_space = DataMover.get_folder_size(dst_path)
         try:
             for path, subdirs, files in os.walk(dst_path):
                 transferred += len(files)
         except Exception as e:
             return 0, 0
-        return transferred, total_files, transferred_space, total_space
+        transferred_space = DataMover.get_folder_size(dst_path)
+        return transferred, transferred_space
     
 
     @staticmethod

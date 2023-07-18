@@ -1,6 +1,6 @@
 $(document).ready(function() {
     generate_table();
-    setInterval(generate_table, 1000);
+    setInterval(generate_table, 2000);
 });
 
 function generate_table() {

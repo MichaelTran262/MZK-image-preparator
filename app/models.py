@@ -3,6 +3,7 @@ from datetime import datetime
 from . import db
 import enum
 import json
+import os
 
 folder_process = db.Table('folder_process',
                           db.Column("folder_id", db.Integer, db.ForeignKey('folder.id')),
@@ -136,6 +137,8 @@ class FolderDb(db.Model):
     # processes = db.relationship('ProcessDb', secondary=folder_process, backref='folders')
     start = db.Column(db.DateTime, default=None, nullable=True)
     end = db.Column(db.DateTime, default=None, nullable=True)
+    size = db.Column(db.Integer, nullable=True)
+    filecount = db.Column(db.Integer, nullable=True)
     images = db.relationship('Image', backref='folder')
 
     def __repr__(self):
@@ -177,6 +180,23 @@ class FolderDb(db.Model):
     def set_end(id):
         folder = FolderDb.query.get(id)
         folder.end = datetime.utcnow()
+        db.session.commit()
+
+    @staticmethod
+    def set_size(id):
+        folder = FolderDb.query.get(id)
+        total_files = 0
+        total_size = 0
+        for dirpath, dirnames, filenames in os.walk(folder.folder_path):
+            for f in filenames:
+                fp = os.path.join(dirpath, f)
+                # skip if it is symbolic link
+                if not os.path.islink(fp):
+                    total_size += os.path.getsize(fp)
+        for path, subdirs, files in os.walk(folder.folder_path):
+            total_files += len(files)
+        folder.filecount = total_files
+        folder.size = total_size/1000000 # in megabytes
         db.session.commit()
 
 

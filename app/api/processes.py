@@ -46,13 +46,12 @@ def get_process_progress(id):
     current_space = 0
     total_space = 0
     for folder in folders:
-       src_path = folder.folder_path + '/2'
        dst_path = os.path.join(folder.dst_path, folder.folder_name)
-       current_fold, total_fold, current_space_f, total_space_f = DataMover.get_folder_progress(src_path=src_path, dst_path=dst_path)
+       current_fold, current_space_f = DataMover.get_folder_progress(dst_path=dst_path)
        current += current_fold
-       total += total_fold
+       total += folder.filecount
        current_space += current_space_f
-       total_space += total_space_f
+       total_space += folder.size
     return jsonify({'current_files':current, 
                     'total_files': total, 
                     'current_space': current_space, 
