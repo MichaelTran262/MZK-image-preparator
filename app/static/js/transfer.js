@@ -1,6 +1,6 @@
 $(document).ready(function () {
     $('.transfer-button').on('click', function () {
-        $('#modalMessage').text('Kontroluji podmínky a MZK disk ...');
+        $('#modalMessage').text('Kontroluji podmínky s MZK diskem...');
         $('#modalInfo').modal('show');
         path = window.location.pathname + '/' + $(this).closest('tr').find('a').text();
         url = '/api/folder/mzk/conditions' + path;
@@ -35,7 +35,7 @@ $(document).ready(function () {
 
                 if (data.exists_at_mzk) {
                     // Handle missing results case
-                    $('#modalMessage').text('Složka s daným názvem se již nachází v MZK!');
+                    $('#modalMessage').text('Složka s daným názvem se již nachází v MZK!\n(' + data.mzk_path + ')');
                     $('#modalInfo').modal('show');
                     return;
                 }
@@ -110,7 +110,7 @@ $(document).ready(function () {
                 });
                 // Transfer later Button
                 $('#transferLaterButton').on('click', function () {
-                    if (confirm("Chcete opravdu složku poslat později tento pátek večer? \n(Složka bude přidána do fronty)") == true) {
+                    if (confirm("Chcete opravdu složku poslat později následující pátek večer? \n(Složka bude přidána do fronty)") == true) {
                         if ($("#jstree").jstree("get_selected", true)[0].text === undefined) {
                             return
                         }
@@ -153,7 +153,7 @@ $(document).ready(function () {
             }
         });
     });
-
+    
     $('#transferModal').on('hidden.bs.modal', function () {
         $('#modalInfo').modal('hide');
         $('#jstree').jstree('destroy');

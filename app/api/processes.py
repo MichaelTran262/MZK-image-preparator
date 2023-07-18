@@ -1,7 +1,7 @@
 from flask import jsonify, request, url_for, abort
 from celery import current_app as celery_app
 from celery.result import AsyncResult
-from ..models import ProcessDb
+from ..models import ProcessDb, FolderDb
 from ..dataMover.DataMover import DataMover
 from . import api
 import os
@@ -40,7 +40,7 @@ def get_process_progress(id):
     '''
     Returns progress of a process
     '''
-    folders = ProcessDb.get_process_folders(id)
+    folders = ProcessDb.process_folders(id)
     current = 0
     total = 0
     current_space = 0
@@ -80,7 +80,12 @@ def remove_celery_task(id):
     Removes celery running celery task
     '''
     celery_app.control.revoke(id, terminate=True)
-    return jsonify({"message": "Proces přenosu ukončen."})
+    proc = request.get_json()
+    if not proc:
+        return jsonify({"message": "/celery_task/remove chybí proces objekt."})
+    id = proc['id']
+    ProcessDb.set_process_to_revoked(id)
+    return jsonify({"message": "Proces přenosu ukončen. Již přenesené soubory nebyly smazány."})
 
 
 @api.route('/processes/celery/active', methods=['GET'])
@@ -93,7 +98,7 @@ def get_active_tasks():
 
 
 @api.route('/processes/folders/<int:id>/')
-def get_process_folders(id):
+def process_folders(id):
     '''
     Returns folders of a proces of id
     '''
@@ -103,10 +108,10 @@ def get_process_folders(id):
     folders = pagination.items
     prev = None
     if pagination.has_prev:
-        prev = url_for('api.get_process_folders', id=id, page=page-1)
+        prev = url_for('api.process_folders', id=id, page=page-1)
     next = None
     if pagination.has_next:
-        next = url_for('api.get_process_folders', id=id, page=page+1)
+        next = url_for('api.process_folders', id=id, page=page+1)
     return jsonify({
         'folders': [folder.to_json() for folder in folders],
         'page': page,
@@ -114,3 +119,12 @@ def get_process_folders(id):
         'next': next,
         'count': pagination.total
     })
+
+
+@api.route('/process_folders/<int:proc_id>/remove/<int:folder_id>', methods=['POST'])
+def remove_process_folder(proc_id, folder_id):
+    proc = ProcessDb.query.get(proc_id)
+    folder = FolderDb.query.get(folder_id)
+    folders = ProcessDb.get_folders(proc_id)
+    ProcessDb.remove_folder(proc_id, folder)
+    return jsonify({"message": "Ok"})

@@ -19,6 +19,9 @@ function set_transfer_buttons() {
             return;
         }
         return
+        /*
+        Code below was ditched for performance reasons
+        */
         let url = '/api/folder/mzk/' + foldername
         $.ajax({
             type: 'GET',

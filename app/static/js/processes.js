@@ -1,23 +1,6 @@
 $(document).ready(function() {
     generate_table();
     setInterval(generate_table, 1000);
-    $('.cancel-button').on('click', function() {
-        uuid = $(this).closest('tr').attr('id');
-        console.log(uuid);
-        url = '/api/processes/celery_task/remove/' + uuid
-        $.ajax({
-            type: 'POST',
-            async: true,
-            url: url,
-            dataType: 'json',
-            success: function(data) {
-                if(!alert('data.message')){window.location.reload();}
-            },
-            error: function(data) {
-                console.log(data);
-            }
-        });
-    });
 });
 
 function generate_table() {
@@ -52,7 +35,7 @@ function generate_table() {
                     row += `<td>Ne</td>`
                 } else {
                     if (data.procs[i].status == 'ProcessStatesEnum.PENDING') {
-                        row += `<td>Ano, na pátek večer</td>`
+                        row += `<td>Ano, na následující pátek v 20 hodin</td>`
                     } else {
                         row += `<td>Ano</td>`
                     }
@@ -70,13 +53,13 @@ function generate_table() {
                 } else {
                     row += '<td>' + data.procs[i].status + '</td>';
                 }
-                row += '<td><a class="btn btn-primary" role="button" href="/get_process_folders/'+ data.procs[i].id + '">Zobrazit</a></td>'
+                row += '<td><a class="btn btn-primary" role="button" href="/process_folders/'+ data.procs[i].id + '">Zobrazit</a></td>'
                 if(data.procs[i].status == 'ProcessStatesEnum.STARTED') {
-                    row += '<td><button type="button" class="cancel-button btn btn-danger" disabled>Ukončit</button><a class="btn btn-info" role="button" href="/process/'+ data.procs[i].id + '">Info</a></td>';
+                    row += '<td><button type="button" class="cancel-button btn btn-danger">Ukončit</button><a class="btn btn-info" role="button" href="/process/'+ data.procs[i].id + '">Info</a></td>';
                 } else {
                     row += '<td><a class="btn btn-info" role="button" href="/process/'+ data.procs[i].id + '">Info</a></td>';
                 }
-                content.append("<tr>"+row+"</tr>");
+                content.append("<tr id="+ data.procs[i].id+ "_" +data.procs[i].celery_task_id +">" + row + "</tr>");
                 if(data.procs[i].status == 'ProcessStatesEnum.STARTED') {
                     progress = `
                     <tr >
@@ -115,7 +98,31 @@ function generate_table() {
                         }
                     });
                 }
-            }
+            };
+            $('.cancel-button').on('click', function() {
+                id = $(this).closest('tr').attr('id');
+                proc_id = id.split('_')[0]
+                uuid =  id.split('_')[1];
+                url = '/api/processes/celery_task/remove/' + uuid;
+                if (confirm("Chcete proces " + id + " opravdu ukončit?")) {
+                    proc = new Object();
+                    proc["id"] = proc_id;
+                    $.ajax({
+                        type: 'POST',
+                        async: true,
+                        url: url,
+                        data: JSON.stringify(proc),
+                        contentType: 'application/json; charset=utf-8',
+                        dataType: 'json',
+                        success: function(data) {
+                            alert(data.message);
+                        },
+                        error: function(data) {
+                            console.log(data);
+                        }
+                    });
+                }
+            });
         },
         error: function(data) {
             console.log(data);

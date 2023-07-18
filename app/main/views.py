@@ -5,7 +5,7 @@ from celery.result import AsyncResult
 from . import main
 from ..preparator.Preparator import get_folders, get_file_count
 from ..dataMover.DataMover import DataMover
-from ..models import ProcessDb, FolderDb, Image
+from ..models import ProcessDb, FolderDb, Image, ProcessStatesEnum
 import os
 
 
@@ -52,11 +52,11 @@ def get_process(id):
     return render_template('process.html', proc=proc)
 
 
-@main.route('/get_process_folders/<int:id>', methods=['GET'])
-def get_process_folders(id):
+@main.route('/process_folders/<int:id>', methods=['GET'])
+def process_folders(id):
     proc = ProcessDb.query.get(id)
     folders = ProcessDb.get_folders(id)
-    return render_template("process_folders.html", process=proc.id, folders=folders)
+    return render_template("process_folders.html", process=proc, folders=folders, ProcessStatesEnum=ProcessStatesEnum)
 
 
 @main.route('/folder_images/<int:id>', methods=['GET'])

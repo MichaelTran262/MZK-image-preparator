@@ -1,4 +1,4 @@
-from flask import current_app, url_for
+from flask import current_app as flask_app, url_for
 from datetime import datetime
 from . import db
 import enum
@@ -49,7 +49,7 @@ class ProcessDb(db.Model):
             'status': str(self.status),
             'start': self.start,
             'stop': self.stop,
-            'folders': url_for('api.get_process_folders', id=self.id)
+            'folders': url_for('api.process_folders', id=self.id)
         }
     
     def add_folder(self, folder):
@@ -71,7 +71,7 @@ class ProcessDb(db.Model):
         return procs
     
     @staticmethod
-    def get_process_folders(id):
+    def process_folders(id):
         proc = ProcessDb.query.get(id)
         return proc.folders
     
@@ -107,10 +107,23 @@ class ProcessDb(db.Model):
         db.session.commit()
 
     @staticmethod
+    def set_process_to_revoked(id):
+        proc = ProcessDb.query.get(id)
+        proc.status = ProcessStatesEnum.REVOKED
+        db.session.commit()
+
+    @staticmethod
     def set_celery_task_id(id, celery_id):
         proc = ProcessDb.query.get(id)
         proc.celery_task_id = celery_id
         db.session.commit()
+
+    @staticmethod
+    def remove_folder(id, folder):
+        proc = ProcessDb.query.get(id)
+        proc.folders.remove(folder)
+        db.session.commit()
+        
 
 class FolderDb(db.Model):
     

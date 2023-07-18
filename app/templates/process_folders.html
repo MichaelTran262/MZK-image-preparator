@@ -1,9 +1,15 @@
 {% extends 'base_table.html' %}
 
 {% block body %}
+<script src="{{ url_for('static', filename='js/process_folders.js') }}"></script>
 <div class="row p-3">
   <div class="container pt-3">
-    <h2>Složky patřící přenosu {{ process }}</h2>      
+    <h2>Složky patřící přenosu <strong id="procId">{{ process.id }}</strong></h2>
+    {% if process.status == ProcessStatesEnum.STARTED %}
+    <div class="alert alert-warning">
+      <strong>Složky již nelze odstranit, přenos probíhá!</strong>
+    </div>
+    {% endif %}   
     <table id="processFolderTable" class="table table-bordered">
       <thead>
         <tr>
@@ -12,16 +18,24 @@
           <th>Cílová složka</th>
           <th>Start</th>
           <th>Konec</th>
+          {% if process.status not in [ProcessStatesEnum.SUCCESS, ProcessStatesEnum.FAILURE, ProcessStatesEnum.REVOKED] %}
+            <th>Akce</th>
+          {% endif %}
         </tr>
       </thead>
       <tbody>
         {% for folder in folders %}
-            <tr>
+            <tr id="{{ folder.id }}">
                 <td class="border-left">{{ folder.folder_name }}</td>
                 <td>{{ folder.folder_path }}</td>
                 <td>{{ folder.dst_path }}</td>
                 <td>{{ folder.start }}</td>
                 <td>{{ folder.end }}</td>
+                {% if process.status == ProcessStatesEnum.PENDING %}
+                  <td><button class="remove-folder btn btn-danger">Odstranit {{ folder.id }}</button></td>
+                {% elif process.status == ProcessStatesEnum.STARTED%}
+                  <td><button class="remove-folder btn btn-danger" title="Nelze odstranit, přenos probíhá" disabled>Odstranit {{ folder.id }}</button></td>
+                {% endif %}
             </tr>
         {% endfor %}
       </tbody>

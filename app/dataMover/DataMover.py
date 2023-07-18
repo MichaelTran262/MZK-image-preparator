@@ -278,6 +278,7 @@ class DataMover():
         folder_result = DataMover.search_dst_folders(foldername)
         if folder_result:
             return_dict['exists_at_mzk'] = True
+            return_dict['mzk_path'] = os.path.relpath(folder_result, '/mnt/MZK')
         else:
             return_dict['exists_at_mzk'] = False
         return return_dict
