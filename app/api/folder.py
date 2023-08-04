@@ -42,7 +42,7 @@ def send_to_mzk_progress():
         return jsonify({'message': 'Error: src_path or dst_path is empty'})
     total = 0
     try:
-        for path, subdirs, files in os.walk(dst_path):
+        for path, subdirs, files in os.walk(src_path):
             total += len(files)
     except Exception as e:
         return 0, 0

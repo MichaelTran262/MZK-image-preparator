@@ -16,6 +16,7 @@
           <th>Jméno složky</th>
           <th>cesta</th>
           <th>Cílová složka</th>
+          <th>Počet souborů</th>
           <th>Start</th>
           <th>Konec</th>
           {% if process.status not in [ProcessStatesEnum.SUCCESS, ProcessStatesEnum.FAILURE, ProcessStatesEnum.REVOKED] %}
@@ -29,6 +30,7 @@
                 <td class="border-left">{{ folder.folder_name }}</td>
                 <td>{{ folder.folder_path }}</td>
                 <td>{{ folder.dst_path }}</td>
+                <td>{{ folder.filecount }}</td>
                 <td>{{ folder.start }}</td>
                 <td>{{ folder.end }}</td>
                 {% if process.status == ProcessStatesEnum.PENDING %}
