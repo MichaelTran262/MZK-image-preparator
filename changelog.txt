@@ -1,4 +1,8 @@
-1.1 - přidán přenos do MZK
+1.1.0 - Přidán přenos do MZK
 1.1.5 - Přidání Celery a ukládání záznamů Celery procesů 
 1.1.6 - Refaktorizace kódu a vylepšení uživatelské přehlednosti s tlačítky
-1.1.7 - Aplikace přejmenována z mzk-image-preparator na krom_app, vytvo5e
+1.1.7 - Aplikace přejmenována z mzk-image-preparator na krom_app, vytvoření spolehlivého přenosu do MZK
+1.1.8 - Transformace obrázků z 600 DPI na 300 při přenosu do MZK
+1.1.9 - Aktualizace base image na python-3.9:bookworm
+1.1.10 - Bug fix
+1.1.11 - Bug fixes, don't transfer dotfiles

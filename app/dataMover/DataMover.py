@@ -3,6 +3,7 @@ from flask import current_app
 from ..models import FolderDb, ProcessDb, ProcessStatesEnum
 from ..exceptions.exceptions import TransferException
 from smb.SMBConnection import SMBConnection
+from pyvips import Image
 import os
 import re
 import shutil
@@ -88,6 +89,7 @@ class DataMover():
                 
             
     def send_files_os(self, folder):
+        files_to_ignore = ['Thumbs.db', '.BridgeSort']
         dst_path = '/mnt/MZK' + folder.dst_path + '/' + folder.folder_name
         if os.path.exists(dst_path):
             current_app.logger.error("DEST PATH ALREADY EXISTS")
@@ -101,6 +103,12 @@ class DataMover():
         if os.path.exists(src_dir):
 
             for path, subdirs, files in os.walk(src_dir):
+                # filter out undesired files
+                files = [f for f in files if (
+                            f not in files_to_ignore and 
+                            (f.endswith(".tiff") or f.endswith(".tif"))
+                         )
+                        ]
                 # Create directories (for convolutes)
                 for dir in subdirs:
                     if dir not in [u'.', u'..']:
@@ -119,8 +127,32 @@ class DataMover():
                     dst_file = os.path.normpath(dst_file)
                     current_app.logger.debug("Transferring FROM: " + file)
                     current_app.logger.debug("Transferring TO: " + dst_file)
-                    shutil.copy2(file, dst_file)
+                    if DataMover.is_high_dpi(file):
+                        DataMover.send_pyvips(file, dst_file)
+                    else:
+                        shutil.copy2(file, dst_file)
 
+
+    @staticmethod
+    def is_high_dpi(src_file):
+        image = Image.new_from_file(src_file)
+        current_ppm_x = image.xres
+        current_ppi_x = round(current_ppm_x * 25.4)
+        if current_ppi_x == 600:
+            return True
+        return False
+
+    @staticmethod
+    def send_pyvips(src_file, dst_file):
+        #TODO send do destination using Image.tiffsave
+        target_ppi = 300
+        image = Image.new_from_file(src_file)
+        current_ppm_x = image.xres
+        current_ppi_x = current_ppm_x * 25.4 # 600 expected always
+        scaling_factor = round(target_ppi / current_ppi_x, 1) # 0.5 expected always
+        new_image = image.resize(scaling_factor)
+        res = target_ppi / 25.4
+        new_image.tiffsave(dst_file, xres=res, yres=res, resunit="inch")
 
     @staticmethod
     def get_active_count(celery_app):
@@ -134,8 +166,8 @@ class DataMover():
         username = str(current_app.config['SMB_USER'])
         password = str(current_app.config['SMB_PASSWORD'])
         ip = str(current_app.config['MZK_IP'])
-        if os.path.exists('/mnt/MZK/MUO'):
-            return True, "MZK is mounted"
+        #if os.path.exists('/mnt/MZK/MUO'):
+        #    return True, "MZK is mounted"
         try:
             conn = SMBConnection(username, password, 'krom_app', ip, use_ntlm_v2=True)
         except Exception as e:
