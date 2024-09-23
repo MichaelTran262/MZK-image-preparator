@@ -1,51 +1,56 @@
 version: '3'
 
 services:
-  mzk-preparator-app:
-    image: michaeltran262/mzk-preparator-app:1.1.7-local
-    container_name: mzk-preparator-app
+  mzk-krom-app:
+    image: michaeltran262/mzk-krom-app:1.1.9
+    container_name: mzk-krom-app
     expose:
       - 5000
     volumes:
       - ./data:/mnt/data
       - ./logs:/logs
-      - ./config.py:/preparator/config.py
+      - ./config.py:/krom_app/config.py
+      - /mnt/MZK:/mnt/MZK
     env_file:
       - .env
-    command: "gunicorn -b 0.0.0.0:5000 --chdir /preparator --worker-tmp-dir /dev/shm --workers=1 -k eventlet --log-level debug preparator:flask_app"
+    command: "gunicorn -b 0.0.0.0:5000 --chdir /krom_app --worker-tmp-dir /dev/shm --workers=1 -k eventlet --log-level info krom_app:flask_app"
     links:
       - mzk-postgres
     restart: always
     depends_on:
       - mzk-postgres
-      - redis
-      - celery-worker
+      - mzk-redis
+      - mzk-worker
     
-  celery-worker:
-    image: michaeltran262/mzk-preparator-app:1.1.7-local
+  mzk-worker:
+    image: michaeltran262/mzk-krom-app:1.1.9
+    container_name: mzk-worker
     volumes:
       - ./data:/mnt/data
       - ./logs:/logs
-      - ./config.py:/preparator/config.py
-    command: "celery -A preparator:celery_app worker"
+      - ./config.py:/krom_app/config.py
+      - /mnt/MZK:/mnt/MZK
+    command: "celery -A krom_app:celery_app worker -B --loglevel=debug"
     env_file:
       - .env
     links:
       - mzk-postgres
     restart: always
     
-  flower:
-    image: michaeltran262/mzk-preparator-app:1.1.7-local
+  mzk-flower:
+    image: michaeltran262/mzk-krom-app:1.1.9
+    container_name: mzk-flower
     volumes:
       - ./data:/mnt/data
       - ./logs:/logs
-      - ./config.py:/preparator/config.py
+      - ./config.py:/krom_app/config.py
       - ./flower:/flower
-    command: "celery -A preparator:celery_app flower --persistent=True --db=/flower/flower.db --max_tasks=1000"
+      - /mnt/MZK:/mnt/MZK
+    command: "celery -A krom_app:celery_app flower --persistent=True --db=/flower/flower.db --max_tasks=1000"
     env_file:
       - .env
     depends_on:
-      - celery-worker
+      - mzk-worker
     restart: always
     ports:
       - "5555:5555"
@@ -64,8 +69,9 @@ services:
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
     
-  redis:
+  mzk-redis:
     image: redis:6-alpine
+    container_name: mzk-redis
     expose:
       - 6379
     ports:
@@ -73,11 +79,16 @@ services:
     depends_on:
       - mzk-postgres
 
-  nginx:
+  mzk-nginx:
     image: nginx:1.24-alpine
+    container_name: mzk-nginx
     volumes:
       - ./nginx/sites-enabled.conf:/etc/nginx/conf.d/default.conf
     ports:
-      - 5000:8080
+      - 80:8080
     links:
-      - mzk-preparator-app
+      - mzk-krom-app
+
+volumes:
+  cache:
+    driver: local

@@ -10,3 +10,13 @@ data
 .vscode
 nginx
 flower
+.env
+celerybeat-schedule.db
+conn_tester.py
+credentials
+flask.sh
+konvolut.txt
+mount.sh
+neco.txt
+worker.sh
+flower.db
